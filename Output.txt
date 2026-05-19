@@ -1,0 +1,1129 @@
+--------------------
+Robot: (12 bodies)
+
+ Idx              Body Name                    Joint Name                    Joint Type              Parent Name(Idx)   Children Name(s)
+ ---              ---------                    ----------                    ----------              ----------------   ----------------
+   1          workspace_ref                  ws_ref_fixed                         fixed                 world_root(0)   box_visual(2)  scaffold_visual(3)  
+   2             box_visual                     box_fixed                         fixed              workspace_ref(1)   
+   3        scaffold_visual                scaffold_fixed                         fixed              workspace_ref(1)   
+   4               gantry_x                       prism_x                     prismatic                 world_root(0)   gantry_y(5)  
+   5               gantry_y                       prism_y                     prismatic                   gantry_x(4)   base(6)  
+   6                   base                    base_jnt_1                         fixed                   gantry_y(5)   link1(7)  
+   7                  link1              joint2_to_joint1                      revolute                       base(6)   link2(8)  
+   8                  link2              joint3_to_joint2                      revolute                      link1(7)   link3(9)  
+   9                  link3              joint4_to_joint3                      revolute                      link2(8)   link4(10)  
+  10                  link4              joint5_to_joint4                      revolute                      link3(9)   link5(11)  
+  11                  link5              joint6_to_joint5                      revolute                     link4(10)   link6(12)  
+  12                  link6        joint6output_to_joint6                      revolute                     link5(11)   
+--------------------
+Loading scaffold: scaffold_curved_void.stl
+  Vertices: 338, Triangles: 676
+  Original bounding box:
+    X[-50.0, 50.0] Y[0.0, 50.0] Z[-50.0, 50.0] mm
+  Applied Rx90 rotation.
+  Rotated bounding box:
+    X[-50.0, 50.0] Y[-50.0, 50.0] Z[0.0, 50.0] mm
+  Cylinder axis: X, center YZ=[-0.00, 0.21], R=48.63 mm
+  Scaffold length (axial X): 100.0 mm, width (arc): 152.8 mm
+  Sharp edges (dihedral > 35 deg): 274
+  Sharp-edge components: 2
+  Selected void component 1: 60 vertices
+  Void size: 42.5 mm (arc) x 40.0 mm (axial)
+  Void center UV: [0.0, 0.0] mm
+  Shell thickness (radial gap on void side): 2.5 mm
+  Honeycomb grid: 4x3 cells, side=6.7 mm
+  Wall height = shell thickness: 2.5 mm (7 layers)
+Computing IK for 22512 points (8-DOF, normal-aligned orientation)...
+  Point 50/22512 — error: 0.000 mm, manipulability: 0.1223
+  Point 100/22512 — error: 0.000 mm, manipulability: 0.1812
+  Point 150/22512 — error: 0.000 mm, manipulability: 0.1160
+  Point 200/22512 — error: 0.000 mm, manipulability: 0.1738
+  Point 250/22512 — error: 0.000 mm, manipulability: 0.0770
+  Point 300/22512 — error: 0.000 mm, manipulability: 0.1142
+  Point 350/22512 — error: 0.000 mm, manipulability: 0.1172
+  Point 400/22512 — error: 0.000 mm, manipulability: 0.0871
+  Point 450/22512 — error: 0.000 mm, manipulability: 0.1544
+  Point 500/22512 — error: 0.000 mm, manipulability: 0.1000
+  Point 550/22512 — error: 0.000 mm, manipulability: 0.1570
+  Point 600/22512 — error: 0.000 mm, manipulability: 0.1168
+  Point 650/22512 — error: 0.000 mm, manipulability: 0.1606
+  Point 700/22512 — error: 0.000 mm, manipulability: 0.1370
+  Point 750/22512 — error: 0.000 mm, manipulability: 0.1341
+  Point 800/22512 — error: 0.000 mm, manipulability: 0.1579
+  Point 850/22512 — error: 0.000 mm, manipulability: 0.1620
+  Point 900/22512 — error: 3.865 mm, manipulability: 0.0000
+  Point 950/22512 — error: 0.000 mm, manipulability: 0.0979
+  Point 1000/22512 — error: 5.882 mm, manipulability: 0.0025
+  Point 1050/22512 — error: 0.000 mm, manipulability: 0.0718
+  Point 1100/22512 — error: 1.008 mm, manipulability: 0.0178
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 1150/22512 — error: 3.349 mm, manipulability: 0.0125
+  Point 1200/22512 — error: 0.000 mm, manipulability: 0.0761
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 1250/22512 — error: 7.716 mm, manipulability: 0.0000
+  Point 1300/22512 — error: 0.000 mm, manipulability: 0.0966
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 1350/22512 — error: 6.373 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 1400/22512 — error: 0.000 mm, manipulability: 0.0798
+  Point 1450/22512 — error: 6.055 mm, manipulability: 0.0068
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 1500/22512 — error: 0.622 mm, manipulability: 0.0229
+  Point 1550/22512 — error: 0.000 mm, manipulability: 0.0308
+  Point 1600/22512 — error: 7.321 mm, manipulability: 0.0054
+  Point 1650/22512 — error: 0.000 mm, manipulability: 0.0785
+  Point 1700/22512 — error: 2.686 mm, manipulability: 0.0000
+  Point 1750/22512 — error: 0.000 mm, manipulability: 0.1498
+  Point 1800/22512 — error: 5.184 mm, manipulability: 0.0000
+  Point 1850/22512 — error: 0.000 mm, manipulability: 0.1003
+  Point 1900/22512 — error: 0.000 mm, manipulability: 0.0492
+  Point 1950/22512 — error: 2.009 mm, manipulability: 0.0000
+  Point 2000/22512 — error: 0.000 mm, manipulability: 0.1084
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 2050/22512 — error: 7.141 mm, manipulability: 0.0011
+  Point 2100/22512 — error: 0.000 mm, manipulability: 0.1232
+  Point 2150/22512 — error: 7.071 mm, manipulability: 0.0025
+  Point 2200/22512 — error: 0.000 mm, manipulability: 0.1106
+  Point 2250/22512 — error: 4.476 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 2300/22512 — error: 0.000 mm, manipulability: 0.0507
+  Point 2350/22512 — error: 0.000 mm, manipulability: 0.0732
+  Point 2400/22512 — error: 6.504 mm, manipulability: 0.0000
+  Point 2450/22512 — error: 0.000 mm, manipulability: 0.1100
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 2500/22512 — error: 7.321 mm, manipulability: 0.0054
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 2550/22512 — error: 0.000 mm, manipulability: 0.1160
+  Point 2600/22512 — error: 0.000 mm, manipulability: 0.1698
+  Point 2650/22512 — error: 0.000 mm, manipulability: 0.0774
+  Point 2700/22512 — error: 0.000 mm, manipulability: 0.1002
+  Point 2750/22512 — error: 0.000 mm, manipulability: 0.1093
+  Point 2800/22512 — error: 0.000 mm, manipulability: 0.0760
+  Point 2850/22512 — error: 0.000 mm, manipulability: 0.1168
+  Point 2900/22512 — error: 0.000 mm, manipulability: 0.0527
+  Point 2950/22512 — error: 0.000 mm, manipulability: 0.1176
+  Point 3000/22512 — error: 0.000 mm, manipulability: 0.0709
+  Point 3050/22512 — error: 0.000 mm, manipulability: 0.1079
+  Point 3100/22512 — error: 0.000 mm, manipulability: 0.0939
+  Point 3150/22512 — error: 0.000 mm, manipulability: 0.0821
+  Point 3200/22512 — error: 0.000 mm, manipulability: 0.1082
+  Point 3250/22512 — error: 0.000 mm, manipulability: 0.0585
+  Point 3300/22512 — error: 0.000 mm, manipulability: 0.1156
+  Point 3350/22512 — error: 0.000 mm, manipulability: 0.0506
+  Point 3400/22512 — error: 0.000 mm, manipulability: 0.1104
+  Point 3450/22512 — error: 0.000 mm, manipulability: 0.0997
+  Point 3500/22512 — error: 0.000 mm, manipulability: 0.1470
+  Point 3550/22512 — error: 0.000 mm, manipulability: 0.1627
+  Point 3600/22512 — error: 0.000 mm, manipulability: 0.1204
+  Point 3650/22512 — error: 0.000 mm, manipulability: 0.1701
+  Point 3700/22512 — error: 0.000 mm, manipulability: 0.1015
+  Point 3750/22512 — error: 0.000 mm, manipulability: 0.1677
+  Point 3800/22512 — error: 0.000 mm, manipulability: 0.1210
+  Point 3850/22512 — error: 0.000 mm, manipulability: 0.1554
+  Point 3900/22512 — error: 0.000 mm, manipulability: 0.1439
+  Point 3950/22512 — error: 0.000 mm, manipulability: 0.1304
+  Point 4000/22512 — error: 0.000 mm, manipulability: 0.1251
+  Point 4050/22512 — error: 0.000 mm, manipulability: 0.0987
+  Point 4100/22512 — error: 0.000 mm, manipulability: 0.1696
+  Point 4150/22512 — error: 0.000 mm, manipulability: 0.0988
+  Point 4200/22512 — error: 0.000 mm, manipulability: 0.1590
+  Point 4250/22512 — error: 0.000 mm, manipulability: 0.1213
+  Point 4300/22512 — error: 0.000 mm, manipulability: 0.1656
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 4350/22512 — error: 4.469 mm, manipulability: 0.0068
+  Point 4400/22512 — error: 0.000 mm, manipulability: 0.0897
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 4450/22512 — error: 5.581 mm, manipulability: 0.0000
+  Point 4500/22512 — error: 0.000 mm, manipulability: 0.1010
+  Point 4550/22512 — error: 6.923 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 4600/22512 — error: 0.000 mm, manipulability: 0.0711
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 4650/22512 — error: 3.349 mm, manipulability: 0.0125
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 4700/22512 — error: 1.801 mm, manipulability: 0.0178
+  Point 4750/22512 — error: 0.000 mm, manipulability: 0.0647
+  Point 4800/22512 — error: 7.467 mm, manipulability: 0.0025
+  Point 4850/22512 — error: 0.000 mm, manipulability: 0.0893
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 4900/22512 — error: 5.450 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 4950/22512 — error: 0.000 mm, manipulability: 0.0842
+  Point 5000/22512 — error: 7.395 mm, manipulability: 0.0040
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 5050/22512 — error: 0.000 mm, manipulability: 0.0420
+  Point 5100/22512 — error: 2.007 mm, manipulability: 0.0204
+  Point 5150/22512 — error: 0.000 mm, manipulability: 0.1547
+  Point 5200/22512 — error: 0.000 mm, manipulability: 0.0810
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 5250/22512 — error: 5.413 mm, manipulability: 0.0040
+  Point 5300/22512 — error: 0.000 mm, manipulability: 0.1314
+  Point 5350/22512 — error: 6.923 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 5400/22512 — error: 0.000 mm, manipulability: 0.1088
+  Point 5450/22512 — error: 1.151 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 5500/22512 — error: 0.000 mm, manipulability: 0.0022
+  Point 5550/22512 — error: 0.000 mm, manipulability: 0.0956
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 5600/22512 — error: 7.042 mm, manipulability: 0.0000
+  Point 5650/22512 — error: 0.000 mm, manipulability: 0.1199
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 5700/22512 — error: 6.528 mm, manipulability: 0.0054
+  Point 5750/22512 — error: 0.000 mm, manipulability: 0.1146
+  Point 5800/22512 — error: 6.504 mm, manipulability: 0.0000
+  Point 5850/22512 — error: 0.000 mm, manipulability: 0.0722
+  Point 5900/22512 — error: 0.000 mm, manipulability: 0.0365
+  Point 5950/22512 — error: 5.268 mm, manipulability: 0.0000
+  Point 6000/22512 — error: 0.000 mm, manipulability: 0.1789
+Warning: Limiting legend entries to 50. Specify a vector of graphics objects to display more than 50 entries. 
+> In matlab.graphics.illustration.Legend.autoUpdateCallback
+In MuffinFresa_ConformalMapping (line 608) 
+  Point 6050/22512 — error: 0.000 mm, manipulability: 0.1150
+  Point 6100/22512 — error: 0.000 mm, manipulability: 0.0569
+  Point 6150/22512 — error: 0.000 mm, manipulability: 0.0822
+  Point 6200/22512 — error: 0.000 mm, manipulability: 0.0980
+  Point 6250/22512 — error: 0.000 mm, manipulability: 0.1176
+  Point 6300/22512 — error: 0.000 mm, manipulability: 0.1160
+  Point 6350/22512 — error: 0.000 mm, manipulability: 0.0952
+  Point 6400/22512 — error: 0.000 mm, manipulability: 0.1222
+  Point 6450/22512 — error: 0.000 mm, manipulability: 0.0755
+  Point 6500/22512 — error: 0.000 mm, manipulability: 0.1233
+  Point 6550/22512 — error: 0.000 mm, manipulability: 0.0809
+  Point 6600/22512 — error: 0.000 mm, manipulability: 0.1166
+  Point 6650/22512 — error: 0.000 mm, manipulability: 0.0976
+  Point 6700/22512 — error: 0.000 mm, manipulability: 0.1000
+  Point 6750/22512 — error: 0.000 mm, manipulability: 0.1117
+  Point 6800/22512 — error: 0.000 mm, manipulability: 0.0773
+  Point 6850/22512 — error: 0.000 mm, manipulability: 0.1341
+  Point 6900/22512 — error: 0.000 mm, manipulability: 0.0996
+  Point 6950/22512 — error: 0.000 mm, manipulability: 0.1495
+  Point 7000/22512 — error: 0.000 mm, manipulability: 0.1121
+  Point 7050/22512 — error: 0.000 mm, manipulability: 0.1349
+  Point 7100/22512 — error: 0.000 mm, manipulability: 0.1494
+  Point 7150/22512 — error: 0.000 mm, manipulability: 0.1281
+  Point 7200/22512 — error: 0.000 mm, manipulability: 0.1039
+  Point 7250/22512 — error: 0.000 mm, manipulability: 0.0775
+  Point 7300/22512 — error: 0.000 mm, manipulability: 0.1451
+  Point 7350/22512 — error: 0.000 mm, manipulability: 0.1182
+  Point 7400/22512 — error: 0.000 mm, manipulability: 0.1624
+  Point 7450/22512 — error: 0.000 mm, manipulability: 0.1367
+  Point 7500/22512 — error: 0.000 mm, manipulability: 0.1367
+  Point 7550/22512 — error: 0.000 mm, manipulability: 0.1602
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 7600/22512 — error: 0.000 mm, manipulability: 0.1069
+  Point 7650/22512 — error: 0.000 mm, manipulability: 0.1662
+  Point 7700/22512 — error: 0.000 mm, manipulability: 0.0923
+  Point 7750/22512 — error: 0.000 mm, manipulability: 0.0691
+  Point 7800/22512 — error: 0.000 mm, manipulability: 0.0747
+  Point 7850/22512 — error: 0.612 mm, manipulability: 0.0178
+  Point 7900/22512 — error: 2.952 mm, manipulability: 0.0125
+  Point 7950/22512 — error: 0.000 mm, manipulability: 0.0811
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8000/22512 — error: 7.320 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8050/22512 — error: 0.000 mm, manipulability: 0.0941
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8100/22512 — error: 5.977 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8150/22512 — error: 0.000 mm, manipulability: 0.0821
+  Point 8200/22512 — error: 5.658 mm, manipulability: 0.0068
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8250/22512 — error: 0.227 mm, manipulability: 0.0229
+  Point 8300/22512 — error: 0.000 mm, manipulability: 0.0369
+  Point 8350/22512 — error: 6.924 mm, manipulability: 0.0054
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8400/22512 — error: 0.000 mm, manipulability: 0.0809
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8450/22512 — error: 6.900 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8500/22512 — error: 0.000 mm, manipulability: 0.0883
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8550/22512 — error: 8.727 mm, manipulability: 0.0011
+  Point 8600/22512 — error: 0.000 mm, manipulability: 0.1898
+  Point 8650/22512 — error: 0.000 mm, manipulability: 0.0355
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8700/22512 — error: 1.613 mm, manipulability: 0.0000
+  Point 8750/22512 — error: 0.000 mm, manipulability: 0.1108
+  Point 8800/22512 — error: 6.744 mm, manipulability: 0.0011
+  Point 8850/22512 — error: 0.000 mm, manipulability: 0.1293
+  Point 8900/22512 — error: 6.674 mm, manipulability: 0.0025
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 8950/22512 — error: 0.000 mm, manipulability: 0.1134
+  Point 9000/22512 — error: 4.079 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 9050/22512 — error: 0.000 mm, manipulability: 0.0564
+  Point 9100/22512 — error: 0.000 mm, manipulability: 0.0769
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 9150/22512 — error: 6.107 mm, manipulability: 0.0000
+  Point 9200/22512 — error: 0.000 mm, manipulability: 0.1114
+  Point 9250/22512 — error: 6.924 mm, manipulability: 0.0054
+  Point 9300/22512 — error: 0.000 mm, manipulability: 0.1112
+  Point 9350/22512 — error: 8.231 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 9400/22512 — error: 0.000 mm, manipulability: 0.0903
+  Point 9450/22512 — error: 0.000 mm, manipulability: 0.1949
+  Point 9500/22512 — error: 0.000 mm, manipulability: 0.0855
+  Point 9550/22512 — error: 0.000 mm, manipulability: 0.0683
+  Point 9600/22512 — error: 0.000 mm, manipulability: 0.0903
+  Point 9650/22512 — error: 0.000 mm, manipulability: 0.0535
+  Point 9700/22512 — error: 0.000 mm, manipulability: 0.0905
+  Point 9750/22512 — error: 0.000 mm, manipulability: 0.0649
+  Point 9800/22512 — error: 0.000 mm, manipulability: 0.0857
+  Point 9850/22512 — error: 0.000 mm, manipulability: 0.0783
+  Point 9900/22512 — error: 0.000 mm, manipulability: 0.0728
+  Point 9950/22512 — error: 0.000 mm, manipulability: 0.0865
+  Point 10000/22512 — error: 0.000 mm, manipulability: 0.0581
+  Point 10050/22512 — error: 0.000 mm, manipulability: 0.0895
+  Point 10100/22512 — error: 0.000 mm, manipulability: 0.0534
+  Point 10150/22512 — error: 0.000 mm, manipulability: 0.0881
+  Point 10200/22512 — error: 0.000 mm, manipulability: 0.0662
+  Point 10250/22512 — error: 0.000 mm, manipulability: 0.0808
+  Point 10300/22512 — error: 0.000 mm, manipulability: 0.1454
+  Point 10350/22512 — error: 0.000 mm, manipulability: 0.0799
+  Point 10400/22512 — error: 0.000 mm, manipulability: 0.1351
+  Point 10450/22512 — error: 0.000 mm, manipulability: 0.0619
+  Point 10500/22512 — error: 0.000 mm, manipulability: 0.1337
+  Point 10550/22512 — error: 0.000 mm, manipulability: 0.0817
+  Point 10600/22512 — error: 0.000 mm, manipulability: 0.1211
+  Point 10650/22512 — error: 0.000 mm, manipulability: 0.1100
+  Point 10700/22512 — error: 0.000 mm, manipulability: 0.0912
+  Point 10750/22512 — error: 0.000 mm, manipulability: 0.1294
+  Point 10800/22512 — error: 0.000 mm, manipulability: 0.0658
+  Point 10850/22512 — error: 0.000 mm, manipulability: 0.1382
+  Point 10900/22512 — error: 0.000 mm, manipulability: 0.0658
+  Point 10950/22512 — error: 0.000 mm, manipulability: 0.1292
+  Point 11000/22512 — error: 0.000 mm, manipulability: 0.0900
+  Point 11050/22512 — error: 0.000 mm, manipulability: 0.1090
+  Point 11100/22512 — error: 0.000 mm, manipulability: 0.1205
+  Point 11150/22512 — error: 0.000 mm, manipulability: 0.1477
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 11200/22512 — error: 5.184 mm, manipulability: 0.0000
+  Point 11250/22512 — error: 0.000 mm, manipulability: 0.1027
+  Point 11300/22512 — error: 6.527 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 11350/22512 — error: 0.000 mm, manipulability: 0.0811
+  Point 11400/22512 — error: 2.952 mm, manipulability: 0.0125
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 11450/22512 — error: 1.405 mm, manipulability: 0.0178
+  Point 11500/22512 — error: 0.000 mm, manipulability: 0.0616
+  Point 11550/22512 — error: 7.071 mm, manipulability: 0.0025
+  Point 11600/22512 — error: 0.000 mm, manipulability: 0.0913
+  Point 11650/22512 — error: 5.054 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 11700/22512 — error: 0.000 mm, manipulability: 0.0863
+  Point 11750/22512 — error: 6.999 mm, manipulability: 0.0040
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 11800/22512 — error: 0.000 mm, manipulability: 0.0466
+  Point 11850/22512 — error: 1.611 mm, manipulability: 0.0204
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 11900/22512 — error: 5.895 mm, manipulability: 0.0097
+  Point 11950/22512 — error: 0.000 mm, manipulability: 0.0709
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 12000/22512 — error: 0.000 mm, manipulability: 0.0477
+  Point 12050/22512 — error: 0.000 mm, manipulability: 0.0980
+  Point 12100/22512 — error: 6.527 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 12150/22512 — error: 0.000 mm, manipulability: 0.1115
+  Point 12200/22512 — error: 0.755 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 12250/22512 — error: 0.000 mm, manipulability: 0.0270
+  Point 12300/22512 — error: 0.000 mm, manipulability: 0.1011
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 12350/22512 — error: 6.645 mm, manipulability: 0.0000
+  Point 12400/22512 — error: 0.000 mm, manipulability: 0.1208
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 12450/22512 — error: 6.131 mm, manipulability: 0.0054
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 12500/22512 — error: 0.000 mm, manipulability: 0.1171
+  Point 12550/22512 — error: 6.107 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 12600/22512 — error: 0.000 mm, manipulability: 0.0777
+  Point 12650/22512 — error: 0.000 mm, manipulability: 0.0436
+  Point 12700/22512 — error: 4.872 mm, manipulability: 0.0000
+  Point 12750/22512 — error: 0.000 mm, manipulability: 0.1013
+  Point 12800/22512 — error: 8.260 mm, manipulability: 0.0025
+  Point 12850/22512 — error: 0.000 mm, manipulability: 0.1216
+  Point 12900/22512 — error: 0.000 mm, manipulability: 0.1561
+  Point 12950/22512 — error: 0.000 mm, manipulability: 0.1236
+  Point 13000/22512 — error: 0.000 mm, manipulability: 0.1496
+  Point 13050/22512 — error: 0.000 mm, manipulability: 0.1478
+  Point 13100/22512 — error: 0.000 mm, manipulability: 0.1211
+  Point 13150/22512 — error: 0.000 mm, manipulability: 0.1590
+  Point 13200/22512 — error: 0.000 mm, manipulability: 0.0979
+  Point 13250/22512 — error: 0.000 mm, manipulability: 0.1629
+  Point 13300/22512 — error: 0.000 mm, manipulability: 0.1048
+  Point 13350/22512 — error: 0.000 mm, manipulability: 0.1536
+  Point 13400/22512 — error: 0.000 mm, manipulability: 0.1269
+  Point 13450/22512 — error: 0.000 mm, manipulability: 0.1309
+  Point 13500/22512 — error: 0.000 mm, manipulability: 0.1487
+  Point 13550/22512 — error: 0.000 mm, manipulability: 0.1022
+  Point 13600/22512 — error: 0.000 mm, manipulability: 0.1550
+  Point 13650/22512 — error: 0.000 mm, manipulability: 0.0807
+  Point 13700/22512 — error: 0.000 mm, manipulability: 0.1526
+  Point 13750/22512 — error: 0.000 mm, manipulability: 0.0220
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 13800/22512 — error: 0.000 mm, manipulability: 0.1599
+  Point 13850/22512 — error: 0.000 mm, manipulability: 0.1631
+  Point 13900/22512 — error: 0.000 mm, manipulability: 0.1307
+  Point 13950/22512 — error: 0.000 mm, manipulability: 0.1739
+  Point 14000/22512 — error: 0.000 mm, manipulability: 0.1066
+  Point 14050/22512 — error: 0.000 mm, manipulability: 0.1752
+  Point 14100/22512 — error: 0.000 mm, manipulability: 0.1196
+  Point 14150/22512 — error: 0.000 mm, manipulability: 0.1649
+  Point 14200/22512 — error: 0.000 mm, manipulability: 0.1420
+  Point 14250/22512 — error: 0.000 mm, manipulability: 0.1395
+  Point 14300/22512 — error: 0.000 mm, manipulability: 0.1660
+  Point 14350/22512 — error: 0.000 mm, manipulability: 0.1100
+  Point 14400/22512 — error: 0.000 mm, manipulability: 0.1697
+  Point 14450/22512 — error: 0.000 mm, manipulability: 0.0955
+  Point 14500/22512 — error: 0.000 mm, manipulability: 0.1636
+  Point 14550/22512 — error: 0.000 mm, manipulability: 0.1161
+  Point 14600/22512 — error: 0.000 mm, manipulability: 0.1529
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 14650/22512 — error: 2.556 mm, manipulability: 0.0125
+  Point 14700/22512 — error: 0.000 mm, manipulability: 0.0835
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 14750/22512 — error: 6.923 mm, manipulability: 0.0000
+  Point 14800/22512 — error: 0.000 mm, manipulability: 0.1011
+  Point 14850/22512 — error: 5.581 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 14900/22512 — error: 0.000 mm, manipulability: 0.0893
+  Point 14950/22512 — error: 5.262 mm, manipulability: 0.0068
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 15000/22512 — error: 0.000 mm, manipulability: 0.0252
+  Point 15050/22512 — error: 0.000 mm, manipulability: 0.0422
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 15100/22512 — error: 6.528 mm, manipulability: 0.0054
+  Point 15150/22512 — error: 0.000 mm, manipulability: 0.0832
+  Point 15200/22512 — error: 6.504 mm, manipulability: 0.0000
+  Point 15250/22512 — error: 0.000 mm, manipulability: 0.0903
+  Point 15300/22512 — error: 8.330 mm, manipulability: 0.0011
+  Point 15350/22512 — error: 0.000 mm, manipulability: 0.0622
+  Point 15400/22512 — error: 3.965 mm, manipulability: 0.0152
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 15450/22512 — error: 0.000 mm, manipulability: 0.1683
+  Point 15500/22512 — error: 0.000 mm, manipulability: 0.0862
+  Point 15550/22512 — error: 6.348 mm, manipulability: 0.0011
+  Point 15600/22512 — error: 0.000 mm, manipulability: 0.0666
+  Point 15650/22512 — error: 6.278 mm, manipulability: 0.0025
+  Point 15700/22512 — error: 0.000 mm, manipulability: 0.1156
+  Point 15750/22512 — error: 3.683 mm, manipulability: 0.0000
+  Point 15800/22512 — error: 0.000 mm, manipulability: 0.0584
+  Point 15850/22512 — error: 0.000 mm, manipulability: 0.0787
+  Point 15900/22512 — error: 5.711 mm, manipulability: 0.0000
+  Point 15950/22512 — error: 0.000 mm, manipulability: 0.1138
+  Point 16000/22512 — error: 6.528 mm, manipulability: 0.0054
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 16050/22512 — error: 0.000 mm, manipulability: 0.1207
+  Point 16100/22512 — error: 7.835 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 16150/22512 — error: 0.000 mm, manipulability: 0.0555
+  Point 16200/22512 — error: 1.502 mm, manipulability: 0.0000
+  Point 16250/22512 — error: 2.734 mm, manipulability: 0.0000
+  Point 16300/22512 — error: 0.000 mm, manipulability: 0.1913
+  Point 16350/22512 — error: 0.000 mm, manipulability: 0.1136
+  Point 16400/22512 — error: 0.000 mm, manipulability: 0.0608
+  Point 16450/22512 — error: 0.000 mm, manipulability: 0.1223
+  Point 16500/22512 — error: 0.000 mm, manipulability: 0.0773
+  Point 16550/22512 — error: 0.000 mm, manipulability: 0.1125
+  Point 16600/22512 — error: 0.000 mm, manipulability: 0.0988
+  Point 16650/22512 — error: 0.000 mm, manipulability: 0.0885
+  Point 16700/22512 — error: 0.000 mm, manipulability: 0.1144
+  Point 16750/22512 — error: 0.000 mm, manipulability: 0.0658
+  Point 16800/22512 — error: 0.000 mm, manipulability: 0.1206
+  Point 16850/22512 — error: 0.000 mm, manipulability: 0.0594
+  Point 16900/22512 — error: 0.000 mm, manipulability: 0.1156
+  Point 16950/22512 — error: 0.000 mm, manipulability: 0.0781
+  Point 17000/22512 — error: 0.000 mm, manipulability: 0.0997
+  Point 17050/22512 — error: 0.000 mm, manipulability: 0.1038
+  Point 17100/22512 — error: 0.000 mm, manipulability: 0.0620
+  Point 17150/22512 — error: 0.000 mm, manipulability: 0.1531
+  Point 17200/22512 — error: 0.000 mm, manipulability: 0.0902
+  Point 17250/22512 — error: 0.000 mm, manipulability: 0.1579
+  Point 17300/22512 — error: 0.000 mm, manipulability: 0.1133
+  Point 17350/22512 — error: 0.000 mm, manipulability: 0.1469
+  Point 17400/22512 — error: 0.000 mm, manipulability: 0.1376
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 17450/22512 — error: 0.000 mm, manipulability: 0.1204
+  Point 17500/22512 — error: 0.000 mm, manipulability: 0.1532
+  Point 17550/22512 — error: 0.000 mm, manipulability: 0.0967
+  Point 17600/22512 — error: 0.000 mm, manipulability: 0.1597
+  Point 17650/22512 — error: 0.000 mm, manipulability: 0.0967
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 17700/22512 — error: 0.000 mm, manipulability: 0.1514
+  Point 17750/22512 — error: 0.000 mm, manipulability: 0.1176
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 17800/22512 — error: 0.000 mm, manipulability: 0.1331
+  Point 17850/22512 — error: 0.000 mm, manipulability: 0.1491
+  Point 17900/22512 — error: 0.000 mm, manipulability: 0.1135
+  Point 17950/22512 — error: 0.000 mm, manipulability: 0.1646
+  Point 18000/22512 — error: 0.000 mm, manipulability: 0.0974
+  Point 18050/22512 — error: 0.000 mm, manipulability: 0.0086
+  Point 18100/22512 — error: 0.000 mm, manipulability: 0.0835
+  Point 18150/22512 — error: 2.556 mm, manipulability: 0.0125
+  Point 18200/22512 — error: 1.008 mm, manipulability: 0.0178
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 18250/22512 — error: 0.000 mm, manipulability: 0.0718
+  Point 18300/22512 — error: 6.674 mm, manipulability: 0.0025
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 18350/22512 — error: 0.000 mm, manipulability: 0.0865
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 18400/22512 — error: 4.657 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 18450/22512 — error: 0.000 mm, manipulability: 0.0884
+  Point 18500/22512 — error: 6.602 mm, manipulability: 0.0040
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 18550/22512 — error: 0.000 mm, manipulability: 0.0509
+  Point 18600/22512 — error: 1.215 mm, manipulability: 0.0204
+  Point 18650/22512 — error: 5.499 mm, manipulability: 0.0097
+  Point 18700/22512 — error: 0.000 mm, manipulability: 0.0736
+  Point 18750/22512 — error: 8.231 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 18800/22512 — error: 0.000 mm, manipulability: 0.0940
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 18850/22512 — error: 8.231 mm, manipulability: 0.0000
+  Point 18900/22512 — error: 0.000 mm, manipulability: 0.1908
+  Point 18950/22512 — error: 0.359 mm, manipulability: 0.0000
+  Point 19000/22512 — error: 0.000 mm, manipulability: 0.0366
+  Point 19050/22512 — error: 0.000 mm, manipulability: 0.1037
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 19100/22512 — error: 6.249 mm, manipulability: 0.0000
+  Point 19150/22512 — error: 0.000 mm, manipulability: 0.1239
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 19200/22512 — error: 5.735 mm, manipulability: 0.0054
+  Point 19250/22512 — error: 0.000 mm, manipulability: 0.0956
+  Point 19300/22512 — error: 5.711 mm, manipulability: 0.0000
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 19350/22512 — error: 0.000 mm, manipulability: 0.0815
+  Point 19400/22512 — error: 0.000 mm, manipulability: 0.0498
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 19450/22512 — error: 4.476 mm, manipulability: 0.0000
+  Point 19500/22512 — error: 0.000 mm, manipulability: 0.1045
+  Point 19550/22512 — error: 7.864 mm, manipulability: 0.0025
+  Point 19600/22512 — error: 0.000 mm, manipulability: 0.1170
+  Point 19650/22512 — error: 8.727 mm, manipulability: 0.0011
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 19700/22512 — error: 0.000 mm, manipulability: 0.0986
+  Point 19750/22512 — error: 0.000 mm, manipulability: 0.1909
+  Point 19800/22512 — error: 0.000 mm, manipulability: 0.0692
+  Point 19850/22512 — error: 0.000 mm, manipulability: 0.0643
+  Point 19900/22512 — error: 0.000 mm, manipulability: 0.0787
+  Point 19950/22512 — error: 0.000 mm, manipulability: 0.0706
+  Point 20000/22512 — error: 0.000 mm, manipulability: 0.1344
+  Point 20050/22512 — error: 0.000 mm, manipulability: 0.0470
+  Point 20100/22512 — error: 0.000 mm, manipulability: 0.0785
+  Point 20150/22512 — error: 0.000 mm, manipulability: 0.1067
+  Point 20200/22512 — error: 0.000 mm, manipulability: 0.1119
+  Point 20250/22512 — error: 0.000 mm, manipulability: 0.1303
+  Point 20300/22512 — error: 0.000 mm, manipulability: 0.0830
+  Point 20350/22512 — error: 0.000 mm, manipulability: 0.1367
+  Point 20400/22512 — error: 0.000 mm, manipulability: 0.0620
+  Point 20450/22512 — error: 0.000 mm, manipulability: 0.1339
+  Point 20500/22512 — error: 0.000 mm, manipulability: 0.0829
+  Point 20550/22512 — error: 0.000 mm, manipulability: 0.1191
+  Point 20600/22512 — error: 0.000 mm, manipulability: 0.1741
+  Point 20650/22512 — error: 0.000 mm, manipulability: 0.1103
+  Point 20700/22512 — error: 0.000 mm, manipulability: 0.1183
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 20750/22512 — error: 0.000 mm, manipulability: 0.1610
+  Point 20800/22512 — error: 0.000 mm, manipulability: 0.0090
+  Point 20850/22512 — error: 0.000 mm, manipulability: 0.2153
+  Point 20900/22512 — error: 0.000 mm, manipulability: 0.1707
+  Point 20950/22512 — error: 0.000 mm, manipulability: 0.0467
+  Point 21000/22512 — error: 0.000 mm, manipulability: 0.1203
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 21050/22512 — error: 2.094 mm, manipulability: 0.0198
+  Point 21100/22512 — error: 0.000 mm, manipulability: 0.0157
+  Point 21150/22512 — error: 0.000 mm, manipulability: 0.1601
+  Point 21200/22512 — error: 0.000 mm, manipulability: 0.1200
+  Point 21250/22512 — error: 0.000 mm, manipulability: 0.0422
+  Point 21300/22512 — error: 0.000 mm, manipulability: 0.0782
+  Point 21350/22512 — error: 0.000 mm, manipulability: 0.0165
+  Point 21400/22512 — error: 0.000 mm, manipulability: 0.1501
+  Point 21450/22512 — error: 0.000 mm, manipulability: 0.0033
+  Point 21500/22512 — error: 0.000 mm, manipulability: 0.1861
+  Point 21550/22512 — error: 0.000 mm, manipulability: 0.2032
+  Point 21600/22512 — error: 0.000 mm, manipulability: 0.1317
+  Point 21650/22512 — error: 0.000 mm, manipulability: 0.1638
+  Point 21700/22512 — error: 0.000 mm, manipulability: 0.0937
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 21750/22512 — error: 0.000 mm, manipulability: 0.0415
+  Point 21800/22512 — error: 0.000 mm, manipulability: 0.1888
+  Point 21850/22512 — error: 0.000 mm, manipulability: 0.1159
+  Point 21900/22512 — error: 0.000 mm, manipulability: 0.1300
+  Point 21950/22512 — error: 0.000 mm, manipulability: 0.1663
+  Point 22000/22512 — error: 0.790 mm, manipulability: 0.0198
+Warning: The provided robot configuration violates the predefined joint limits. 
+> In robotics.manip.internal.warning (line 19)
+In robotics.manip.internal/RigidBodyTree/validateConfigurationWithLimits (line 1944)
+In inverseKinematics/solve (line 327)
+In inverseKinematics/stepImpl (line 164)
+In MuffinFresa_ConformalMapping (line 572) 
+  Point 22050/22512 — error: 0.000 mm, manipulability: 0.1035
+  Point 22100/22512 — error: 0.000 mm, manipulability: 0.0949
+  Point 22150/22512 — error: 0.000 mm, manipulability: 0.1019
+  Point 22200/22512 — error: 0.000 mm, manipulability: 0.1035
+  Point 22250/22512 — error: 0.000 mm, manipulability: 0.0774
+  Point 22300/22512 — error: 0.000 mm, manipulability: 0.0823
+  Point 22350/22512 — error: 0.000 mm, manipulability: 0.1610
+  Point 22400/22512 — error: 0.000 mm, manipulability: 0.0276
+  Point 22450/22512 — error: 0.000 mm, manipulability: 0.1973
+  Point 22500/22512 — error: 0.000 mm, manipulability: 0.1463
+IK complete. Max error: 8.959 mm, Mean error: 1.135 mm
+Warning: Imaginary parts of complex X and/or Y arguments ignored. 
+> In MuffinFresa_ConformalMapping (line 644) 
+>> 
