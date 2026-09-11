@@ -1,322 +1,630 @@
-function report = gcode_executor(program, s, mc, options)
-%GCODE_EXECUTOR Execute parsed G-code with the XY platform and MyCobot arm.
-%   REPORT = GCODE_EXECUTOR(PROGRAM, S, MC, OPTIONS) accepts the output of
-%   GCODE_PARSER (or a G-code file path), an XY serialport handle S, a
-%   loaded mc_bridge Python module MC, and execution options.
+function [logData, report] = gcode_executor(traj, s, mc, config)
+%GCODE_EXECUTOR Execute a parsed G-code trajectory on XY + MyCobot hardware.
+%   [LOGDATA, REPORT] = GCODE_EXECUTOR(TRAJ, S, MC, CONFIG) executes the
+%   parsed trajectory returned by GCODE_PARSER. XY motion is sent through
+%   the serial object S, Z motion is sent through the MyCobot bridge MC,
+%   and extrusion is logged as a placeholder for future hardware control.
 
-    if nargin < 4 || isempty(options)
-        options = struct();
-    end
-    options = normalizeOptions(options);
+    if nargin < 2, s = []; end
+    if nargin < 3, mc = []; end
+    if nargin < 4 || isempty(config), config = struct(); end
 
-    if ischar(program) || isstring(program)
-        program = gcode_parser(program);
-    end
-
-    if ~isstruct(program) || ~isfield(program, 'commands')
-        error('gcode_executor:InvalidProgram', 'PROGRAM must be a parsed G-code struct or file path.');
+    if ischar(traj) || isstring(traj)
+        traj = gcode_parser(traj);
     end
 
-    commands = program.commands;
-    nCommands = numel(commands);
-    telemetry = repmat(emptyTelemetry(), nCommands, 1);
-    materialUsed = 0;
+    config = apply_defaults(config);
+    [logData, report] = exec_gcode_trajectory(traj, s, mc, config);
+end
 
-    if ~isempty(s)
-        writeline(s, 'G90');
-        pause(options.xy_command_delay_s);
+function [logData, report] = exec_gcode_trajectory(traj, s, mc, config)
+    if ~isstruct(traj) || ~isfield(traj, 'sequence')
+        error('gcode_executor:InvalidTrajectory', 'Trajectory must come from gcode_parser.');
     end
 
-    if ~isempty(mc)
-        try
-            mc.set_move_mode(int32(options.mycobot_move_mode));
-        catch ME
-            warning('gcode_executor:MoveMode', 'Unable to set MyCobot move mode: %s', ME.message);
-        end
-    end
+    nMoves = count_moves(traj.sequence);
+    logData = initialize_log(nMoves, numel(traj.sequence));
+    controller = initialize_keyboard_controller(config.enableKeyboardControl);
+    cleanupObj = onCleanup(@() cleanup_keyboard_controller(controller)); %#ok<NASGU>
 
+    state = struct(...
+        'lastXY', [0, 0], ...
+        'lastZ', 0, ...
+        'lastE', 0, ...
+        'lastFeed', config.defaultXYFeedrate, ...
+        'aborted', false);
+
+    moveIndex = 0;
+    totalXYDistance = 0;
+    totalZDistance = 0;
+    totalMaterial = 0;
     t0 = tic;
-    for i = 1:nCommands
-        cmd = commands(i);
-        waitIfPaused(options, s);
+    finalPose = [NaN, NaN, NaN, NaN, NaN, NaN];
 
-        entry = emptyTelemetry();
-        entry.index = i;
-        entry.line_number = cmd.line_number;
-        entry.command = cmd.code;
-        entry.command_type = cmd.type;
-        entry.timestamp_s = toc(t0);
-        entry.desired = [cmd.position, cmd.feedrate];
-        entry.extrusion_delta = cmd.extrusion_delta;
-        entry.status = "skipped";
+    if config.homeOnStart
+        homeEntry = struct('code', 'G28', 'params', struct(), 'raw', 'G28');
+        [state, ~] = execute_non_move_command(homeEntry, s, mc, config, state);
+    end
 
-        try
-            switch char(cmd.type)
-                case 'motion'
-                    executeMotion(cmd, s, mc, options);
-                    materialUsed = materialUsed + max(0, cmd.extrusion_delta);
-                    if cmd.has_e
-                        handleExtrusion(cmd.extrusion_delta, cmd, options);
-                    end
-                    entry.status = "ok";
-                case 'home'
-                    executeHome(cmd, s, mc, options);
-                    entry.status = "ok";
-                case 'set_position'
-                    if ~isempty(s)
-                        writeline(s, buildG92(cmd));
-                        pause(options.xy_command_delay_s);
-                    end
-                    entry.status = "ok";
-                case {'set_temperature','wait_temperature','raw','pause'}
-                    if ~isempty(s)
-                        writeline(s, char(cmd.text));
-                        pause(options.xy_command_delay_s);
-                    end
-                    entry.status = "ok";
-                otherwise
-                    entry.status = "ignored";
+    for i = 1:numel(traj.sequence)
+        if should_abort(controller)
+            state.aborted = true;
+            break;
+        end
+        wait_if_paused(controller);
+
+        entry = traj.sequence{i};
+        logData.sequence_log{i} = entry;
+
+        if strcmp(entry.type, 'move')
+            moveIndex = moveIndex + 1;
+            target = apply_coordinate_transform(entry.target, config);
+            if isnan(target(5))
+                target(5) = state.lastFeed;
+            else
+                state.lastFeed = target(5);
             end
-        catch ME
-            entry.status = "error";
-            entry.note = string(ME.message);
-            telemetry(i) = updateTelemetry(entry, s, mc);
-            rethrow(ME);
-        end
 
-        telemetry(i) = updateTelemetry(entry, s, mc);
-        fprintf('[%d/%d] %s %s\n', i, nCommands, char(cmd.code), char(telemetry(i).status));
-    end
+            target(1:2) = clamp_xy_target(target(1:2), config);
+            target(3) = min(max(target(3), config.robotZMin), config.robotZMax);
 
-    finalPose = nan(1, 6);
-    if ~isempty(mc)
-        finalPose = readMyCobotPose(mc);
-    end
-    [rmseXYZ, axisCount] = computeRmse(telemetry);
+            [xyActual, xyStatus] = move_xy_gcode(target, s, config, state.lastXY);
+            [zActual, zStatus, poseAfter] = move_robot_z(target(3), mc, config);
+            [materialDelta, materialTotal] = extrude_material(target(4), state.lastE, totalMaterial);
 
-    report = struct();
-    report.source_file = program.source_file;
-    report.command_count = nCommands;
-    report.waypoint_count = program.waypoint_count;
-    report.material_used = materialUsed;
-    report.rmse_xyz = rmseXYZ;
-    report.rmse_axis_count = axisCount;
-    report.final_pose = finalPose;
-    report.telemetry = telemetry;
-    report.completed_at = datetime('now');
-
-    fprintf('\n=== G-code execution report ===\n');
-    fprintf('Commands executed: %d\n', nCommands);
-    fprintf('Waypoints executed: %d\n', program.waypoint_count);
-    fprintf('Material used (E delta): %.3f\n', materialUsed);
-    fprintf('RMSE [X Y Z]: [%.3f %.3f %.3f]\n', rmseXYZ);
-    fprintf('Final MyCobot pose: [%.3f %.3f %.3f %.3f %.3f %.3f]\n', finalPose);
-end
-
-function options = normalizeOptions(options)
-    defaults = struct( ...
-        'xy_command_delay_s', 0.05, ...
-        'xy_settle_time_s', 0.10, ...
-        'mycobot_move_mode', 1, ...
-        'mycobot_speed', 60, ...
-        'mycobot_wait', true, ...
-        'mycobot_timeout_s', 20, ...
-        'couple_xy_to_mycobot', false, ...
-        'mycobot_orientation', [NaN NaN NaN], ...
-        'mycobot_offset', [0 0 0], ...
-        'home_mycobot', false, ...
-        'mycobot_home_joints', [0 -80 120 60 30 0], ...
-        'pause_file', "", ...
-        'pause_callback', [], ...
-        'extruder_callback', []);
-
-    names = fieldnames(defaults);
-    for i = 1:numel(names)
-        name = names{i};
-        if ~isfield(options, name) || isempty(options.(name))
-            options.(name) = defaults.(name);
-        end
-    end
-end
-
-function executeMotion(cmd, s, mc, options)
-    if ~isempty(s) && (cmd.has_x || cmd.has_y || cmd.has_f)
-        writeline(s, buildXYMove(cmd));
-        pause(options.xy_settle_time_s);
-    end
-
-    if ~isempty(mc) && cmd.has_z
-        coords = readMyCobotPose(mc);
-        target = coords;
-        if any(isnan(target))
-            target = [0 0 0 0 0 0];
-        end
-        if options.couple_xy_to_mycobot
-            if cmd.has_x, target(1) = cmd.position(1) + options.mycobot_offset(1); end
-            if cmd.has_y, target(2) = cmd.position(2) + options.mycobot_offset(2); end
-        end
-        target(3) = cmd.position(3) + options.mycobot_offset(3);
-
-        ori = options.mycobot_orientation;
-        for k = 1:3
-            if ~isnan(ori(k))
-                target(3 + k) = ori(k);
+            desired = target(1:3);
+            actual = [xyActual, zActual];
+            startPose = [state.lastXY, state.lastZ];
+            totalXYDistance = totalXYDistance + norm(desired(1:2) - startPose(1:2));
+            totalZDistance = totalZDistance + abs(desired(3) - startPose(3));
+            state.lastXY = xyActual;
+            state.lastZ = zActual;
+            state.lastE = target(4);
+            totalMaterial = materialTotal;
+            if ~isempty(poseAfter)
+                finalPose = poseAfter;
+            else
+                finalPose(1:3) = [xyActual, zActual];
             end
-        end
 
-        mc.move_cartesian(target(1), target(2), target(3), target(4), target(5), target(6), ...
-            int32(options.mycobot_speed), logical(options.mycobot_wait), double(options.mycobot_timeout_s));
-    end
-end
-
-function executeHome(cmd, s, mc, options)
-    axes = char(cmd.home_axes);
-    if ~isempty(s)
-        if isempty(axes)
-            writeline(s, 'G28');
+            logData = log_telemetry(logData, moveIndex, toc(t0), desired, actual, target(4), materialDelta, xyStatus, zStatus, entry);
         else
-            writeline(s, sprintf('G28 %s', axes));
-        end
-        pause(options.xy_settle_time_s);
-    end
-
-    if ~isempty(mc) && options.home_mycobot
-        mc.home(py.list(num2cell(options.mycobot_home_joints)));
-    end
-end
-
-function line = buildXYMove(cmd)
-    line = 'G1';
-    if cmd.has_x
-        line = sprintf('%s X%.3f', line, cmd.position(1));
-    end
-    if cmd.has_y
-        line = sprintf('%s Y%.3f', line, cmd.position(2));
-    end
-    if cmd.has_f && ~isnan(cmd.feedrate)
-        line = sprintf('%s F%.3f', line, cmd.feedrate);
-    end
-end
-
-function line = buildG92(cmd)
-    line = 'G92';
-    if cmd.has_x
-        line = sprintf('%s X%.3f', line, cmd.position(1));
-    end
-    if cmd.has_y
-        line = sprintf('%s Y%.3f', line, cmd.position(2));
-    end
-    if cmd.has_z
-        line = sprintf('%s Z%.3f', line, cmd.position(3));
-    end
-    if cmd.has_e
-        line = sprintf('%s E%.3f', line, cmd.position(4));
-    end
-end
-
-function handleExtrusion(extrusionDelta, cmd, options)
-    if isa(options.extruder_callback, 'function_handle')
-        options.extruder_callback(extrusionDelta, cmd);
-    elseif extrusionDelta > 0
-        fprintf('Extruder placeholder: deposit %.3f units at line %d\n', extrusionDelta, cmd.line_number);
-    end
-end
-
-function telemetry = updateTelemetry(telemetry, s, mc)
-    telemetry.actual_xy = [NaN NaN];
-    telemetry.xy_source = "NONE";
-    telemetry.actual_pose = nan(1, 6);
-
-    if ~isempty(s)
-        [xr, yr, ok, src] = getXY(s);
-        if ok
-            telemetry.actual_xy = [xr yr];
-            telemetry.xy_source = string(src);
+            [state, note] = execute_non_move_command(entry, s, mc, config, state);
+            logData.event_log{i} = note;
         end
     end
 
-    if ~isempty(mc)
-        telemetry.actual_pose = readMyCobotPose(mc);
+    logData = trim_log(logData, moveIndex);
+    logData.material_total = totalMaterial;
+
+    report = build_report(traj, logData, totalXYDistance, totalZDistance, totalMaterial, toc(t0), state.aborted, finalPose);
+
+    if config.plotTelemetry && moveIndex > 0
+        plot_telemetry(logData, report);
     end
 end
 
-function pose = readMyCobotPose(mc)
-    pose = nan(1, 6);
+function nMoves = count_moves(sequence)
+    nMoves = 0;
+    for i = 1:numel(sequence)
+        if isfield(sequence{i}, 'type') && strcmp(sequence{i}.type, 'move')
+            nMoves = nMoves + 1;
+        end
+    end
+end
+
+function logData = initialize_log(nMoves, nSequence)
+    logData = struct();
+    logData.timestamp = nan(nMoves,1);
+    logData.ref_log = nan(nMoves,3);
+    logData.r_log = nan(nMoves,3);
+    logData.e_log = nan(nMoves,3);
+    logData.e_cmd = nan(nMoves,1);
+    logData.material_delta = zeros(nMoves,1);
+    logData.material_total = 0;
+    logData.xy_status = cell(nMoves,1);
+    logData.z_status = cell(nMoves,1);
+    logData.sequence_log = cell(nSequence,1);
+    logData.event_log = cell(nSequence,1);
+    logData.power_log = nan(nMoves,1);
+end
+
+function controller = initialize_keyboard_controller(enableKeyboardControl)
+    controller = struct('enabled', false, 'figure', []);
+    if ~enableKeyboardControl
+        return;
+    end
+
     try
-        poseInfo = mc.get_pose();
-        pose = pylist_to_double(poseInfo{'coords'});
+        controller.figure = figure( ...
+            'Name', 'G-code execution controls', ...
+            'NumberTitle', 'off', ...
+            'MenuBar', 'none', ...
+            'ToolBar', 'none', ...
+            'Color', 'w', ...
+            'HandleVisibility', 'callback', ...
+            'KeyPressFcn', @keyboard_callback);
+        controller.enabled = true;
+        setappdata(controller.figure, 'gcode_pause', false);
+        setappdata(controller.figure, 'gcode_abort', false);
+        annotation(controller.figure, 'textbox', [0.1 0.3 0.8 0.4], ...
+            'String', {'Space: pause/resume', 'Q: abort execution'}, ...
+            'FitBoxToText', 'on', 'EdgeColor', 'none');
+        drawnow;
     catch
+        controller.enabled = false;
+        controller.figure = [];
+    end
+end
+
+function keyboard_callback(src, evt)
+    if strcmp(evt.Key, 'space')
+        paused = getappdata(src, 'gcode_pause');
+        setappdata(src, 'gcode_pause', ~paused);
+    elseif strcmpi(evt.Key, 'q')
+        setappdata(src, 'gcode_abort', true);
+    end
+end
+
+function cleanup_keyboard_controller(controller)
+    if controller.enabled && ishghandle(controller.figure)
+        try
+            close(controller.figure);
+        catch
+        end
+    end
+end
+
+function tf = should_abort(controller)
+    tf = false;
+    if controller.enabled && ishghandle(controller.figure)
+        tf = islogical(getappdata(controller.figure, 'gcode_abort')) && getappdata(controller.figure, 'gcode_abort');
+    end
+end
+
+function wait_if_paused(controller)
+    while controller.enabled && ishghandle(controller.figure)
+        paused = getappdata(controller.figure, 'gcode_pause');
+        aborted = getappdata(controller.figure, 'gcode_abort');
+        if aborted || ~paused
+            return;
+        end
+        drawnow;
+        pause(0.1);
+    end
+end
+
+function target = apply_coordinate_transform(target, config)
+    xyz = target(1:3);
+    if isa(config.transformFcn, 'function_handle')
+        xyz = config.transformFcn(xyz);
+    end
+    xyz = xyz(:).';
+    xyz(1:2) = xyz(1:2) .* config.xyScale + config.xyOffset;
+    xyz(3) = xyz(3) * config.zScale + config.zOffset;
+    target(1:3) = xyz;
+end
+
+function [actualXY, status] = move_xy_gcode(target, s, config, estimatedXY)
+    targetXY = clamp_xy_target(target(1:2), config);
+    targetFeed = target(5);
+    if isnan(targetFeed) || targetFeed <= 0
+        targetFeed = config.defaultXYFeedrate;
+    end
+
+    status = struct('ok', true, 'source', 'DRYRUN', 'command', '', 'feedback', false);
+    status.command = build_xy_command(targetXY, targetFeed, estimatedXY);
+
+    if config.dryRun || isempty(s)
+        actualXY = targetXY;
+        return;
+    end
+
+    actualXY = estimatedXY;
+    try
+        writeline(s, 'G90');
+        pause(0.01);
+        drain_serial(s, 1);
+        writeline(s, status.command);
+    catch ME
+        status.ok = false;
+        status.source = 'SERIAL_ERROR';
+        status.error = ME.message;
+        actualXY = targetXY;
+        return;
+    end
+
+    tStart = tic;
+    lastMeasured = estimatedXY;
+    stallCount = 0;
+    feedbackSeen = false;
+    while toc(tStart) < config.xyTimeout
+        pause(config.xyPollPeriod);
+        [xm, ym, ok, src] = getXY(s);
+        if ok && ~any(isnan([xm, ym]))
+            actualXY = [xm, ym];
+            status.source = src;
+            status.feedback = true;
+            feedbackSeen = true;
+            if norm(actualXY - targetXY) <= config.xyTolerance
+                break;
+            end
+            if norm(actualXY - lastMeasured) <= config.xyStallTolerance
+                stallCount = stallCount + 1;
+            else
+                stallCount = 0;
+            end
+            lastMeasured = actualXY;
+            if stallCount >= config.xyStallSamples
+                status.ok = false;
+                status.source = [src, ':STALL'];
+                break;
+            end
+        end
+    end
+
+    if ~feedbackSeen
+        actualXY = targetXY;
+        status.source = 'EST';
+    end
+end
+
+function cmd = build_xy_command(targetXY, feedrate, estimatedXY)
+    includeX = isempty(estimatedXY) || numel(estimatedXY) < 2 || isnan(estimatedXY(1)) || abs(targetXY(1) - estimatedXY(1)) > eps;
+    includeY = isempty(estimatedXY) || numel(estimatedXY) < 2 || isnan(estimatedXY(2)) || abs(targetXY(2) - estimatedXY(2)) > eps;
+    tokens = {'G1'};
+    if includeX
+        tokens{end+1} = sprintf('X%.3f', targetXY(1)); %#ok<AGROW>
+    end
+    if includeY
+        tokens{end+1} = sprintf('Y%.3f', targetXY(2)); %#ok<AGROW>
+    end
+    tokens{end+1} = sprintf('F%.0f', feedrate); %#ok<AGROW>
+    cmd = strjoin(tokens, ' ');
+end
+
+function targetXY = clamp_xy_target(targetXY, config)
+    targetXY(1) = min(max(targetXY(1), config.Xmin), config.Xmax);
+    targetXY(2) = min(max(targetXY(2), config.Ymin), config.Ymax);
+    if isfinite(config.Rsafe)
+        radius = hypot(targetXY(1), targetXY(2));
+        if radius > config.Rsafe && radius > 0
+            scale = config.Rsafe / radius;
+            targetXY = targetXY * scale;
+        end
+    end
+end
+
+function [actualZ, status, poseAfter] = move_robot_z(targetZ, mc, config)
+    status = struct('ok', true, 'source', 'DRYRUN', 'pose', []);
+    poseAfter = [];
+    if isnan(targetZ)
+        actualZ = NaN;
+        return;
+    end
+
+    targetZ = min(max(targetZ, config.robotZMin), config.robotZMax);
+    if config.dryRun || isempty(mc)
+        actualZ = targetZ;
+        poseAfter = [NaN, NaN, actualZ, NaN, NaN, NaN];
+        return;
+    end
+
+    pose = safe_get_pose(mc);
+    if isempty(pose)
+        pose = config.robotPoseReference;
     end
     if isempty(pose)
-        pose = nan(1, 6);
+        pose = [0, 0, targetZ, 0, 0, 0];
     end
-    pose = reshape(double(pose), 1, []);
-    if numel(pose) < 6
-        pose(6) = NaN;
-    else
-        pose = pose(1:6);
+
+    pose(3) = targetZ;
+    try
+        mc.move_cartesian(pose(1), pose(2), pose(3), pose(4), pose(5), pose(6), int32(config.myCobotSpeed), true, config.myCobotTimeout);
+        poseAfter = safe_get_pose(mc);
+        if isempty(poseAfter)
+            actualZ = targetZ;
+            poseAfter = [NaN, NaN, actualZ, NaN, NaN, NaN];
+        else
+            actualZ = poseAfter(3);
+            status.pose = poseAfter;
+            status.source = 'MYCOBOT';
+        end
+    catch ME
+        actualZ = targetZ;
+        poseAfter = [NaN, NaN, actualZ, NaN, NaN, NaN];
+        status.ok = false;
+        status.source = 'MYCOBOT_ERROR';
+        status.error = ME.message;
     end
 end
 
-function waitIfPaused(options, s)
-    paused = shouldPause(options);
-    while paused
-        pause(0.2);
-        paused = shouldPause(options);
+function pose = safe_get_pose(mc)
+    pose = [];
+    try
+        poseObj = mc.get_pose();
+        coords = pylist_to_double(poseObj{'coords'});
+        if ~isempty(coords)
+            pose = reshape(double(coords), 1, []);
+            if numel(pose) < 6
+                pose(6) = NaN;
+            else
+                pose = pose(1:6);
+            end
+        end
+    catch
+        pose = [];
     end
 end
 
-function tf = shouldPause(options)
+function [materialDelta, materialTotal] = extrude_material(targetE, previousE, currentTotal)
+    if nargin < 3
+        currentTotal = 0;
+    end
+    if isnan(targetE)
+        materialDelta = 0;
+        materialTotal = currentTotal;
+        return;
+    end
+
+    materialDelta = targetE - previousE;
+    if materialDelta < 0
+        materialDelta = 0;
+    end
+    materialTotal = currentTotal + materialDelta;
+end
+
+function logData = log_telemetry(logData, index, timestamp, desired, actual, eCommand, materialDelta, xyStatus, zStatus, entry)
+    logData.timestamp(index) = timestamp;
+    logData.ref_log(index,:) = desired;
+    logData.r_log(index,:) = actual;
+    logData.e_log(index,:) = desired - actual;
+    logData.e_cmd(index) = eCommand;
+    logData.material_delta(index) = materialDelta;
+    logData.xy_status{index} = xyStatus;
+    logData.z_status{index} = zStatus;
+    logData.event_log{index} = entry;
+end
+
+function [state, note] = execute_non_move_command(entry, s, mc, config, state)
+    note = entry.raw;
+    params = struct();
+    if isfield(entry, 'params')
+        params = entry.params;
+    end
+
+    switch upper(entry.code)
+        case 'G28'
+            if isempty(fieldnames(params)) || isfield(params, 'X')
+                state.lastXY(1) = 0;
+            end
+            if isempty(fieldnames(params)) || isfield(params, 'Y')
+                state.lastXY(2) = 0;
+            end
+            if isempty(fieldnames(params)) || isfield(params, 'Z')
+                state.lastZ = 0;
+            end
+            if config.dryRun
+                return;
+            end
+            if ~isempty(s)
+                send_serial_command(s, build_home_command(params));
+            end
+            if ~isempty(mc) && (isempty(fieldnames(params)) || isfield(params, 'Z')) && config.homeMyCobotOnG28
+                try
+                    mc.home(py.list(num2cell(config.myCobotHomePosition)));
+                catch
+                end
+            end
+
+        case {'G90', 'G91', 'G20', 'G21'}
+            if ~config.dryRun && ~isempty(s)
+                send_serial_command(s, upper(entry.raw));
+            end
+
+        case 'G92'
+            if isfield(params, 'X') && ~isempty(params.X)
+                state.lastXY(1) = params.X;
+            end
+            if isfield(params, 'Y') && ~isempty(params.Y)
+                state.lastXY(2) = params.Y;
+            end
+            if isfield(params, 'Z') && ~isempty(params.Z)
+                state.lastZ = params.Z;
+            end
+            if isfield(params, 'E') && ~isempty(params.E)
+                state.lastE = params.E;
+            end
+            if ~config.dryRun && ~isempty(s)
+                xyCmd = build_g92_command(params);
+                if ~isempty(xyCmd)
+                    send_serial_command(s, xyCmd);
+                end
+            end
+
+        otherwise
+            if ~config.dryRun && ~isempty(s) && should_forward_serial_command(entry.code, config)
+                send_serial_command(s, upper(entry.raw));
+            end
+    end
+end
+
+function send_serial_command(s, commandText)
+    if isempty(commandText)
+        return;
+    end
+    writeline(s, commandText);
+    pause(0.02);
+    drain_serial(s, 3);
+end
+
+function tf = should_forward_serial_command(code, config)
     tf = false;
-    if strlength(string(options.pause_file)) > 0 && exist(char(options.pause_file), 'file') == 2
-        tf = true;
-        return;
-    end
-    if isa(options.pause_callback, 'function_handle')
-        tf = logical(options.pause_callback());
+    if strncmpi(code, 'M', 1)
+        tf = config.forwardMCodesToXY;
+    elseif strncmpi(code, 'G', 1)
+        tf = config.forwardOtherCommandsToXY;
     end
 end
 
-function [rmseXYZ, axisCount] = computeRmse(telemetry)
-    motionMask = arrayfun(@(t) strcmp(char(t.command_type), 'motion'), telemetry);
-    telemetry = telemetry(motionMask);
-
-    if isempty(telemetry)
-        rmseXYZ = [NaN NaN NaN];
-        axisCount = [0 0 0];
+function cmd = build_home_command(params)
+    fields = intersect(fieldnames(params), {'X','Y'});
+    if isempty(fields)
+        cmd = 'G28';
         return;
     end
-
-    desired = vertcat(telemetry.desired);
-    actual = nan(numel(telemetry), 3);
-    for i = 1:numel(telemetry)
-        actual(i, 1:2) = telemetry(i).actual_xy;
-        actual(i, 3) = telemetry(i).actual_pose(3);
+    tokens = {'G28'};
+    for i = 1:numel(fields)
+        tokens{end+1} = upper(fields{i}); %#ok<AGROW>
     end
+    cmd = strjoin(tokens, ' ');
+end
 
-    rmseXYZ = nan(1, 3);
-    axisCount = zeros(1, 3);
-    for axis = 1:3
-        valid = ~isnan(desired(:, axis)) & ~isnan(actual(:, axis));
-        axisCount(axis) = nnz(valid);
-        if any(valid)
-            rmseXYZ(axis) = sqrt(mean((desired(valid, axis) - actual(valid, axis)).^2));
+function cmd = build_g92_command(params)
+    tokens = {'G92'};
+    axesNames = {'X','Y'};
+    for i = 1:numel(axesNames)
+        axisName = axesNames{i};
+        if isfield(params, axisName) && ~isempty(params.(axisName))
+            tokens{end+1} = sprintf('%s%.3f', axisName, params.(axisName)); %#ok<AGROW>
+        end
+    end
+    if numel(tokens) == 1
+        cmd = '';
+    else
+        cmd = strjoin(tokens, ' ');
+    end
+end
+
+function drain_serial(s, maxReads)
+    if nargin < 2
+        maxReads = 1;
+    end
+    for i = 1:maxReads
+        if s.NumBytesAvailable <= 0
+            return;
+        end
+        try %#ok<TRYNC>
+            readline(s);
         end
     end
 end
 
-function telemetry = emptyTelemetry()
-    telemetry = struct( ...
-        'index', 0, ...
-        'line_number', 0, ...
-        'command', "", ...
-        'command_type', "", ...
-        'timestamp_s', 0, ...
-        'desired', nan(1, 5), ...
-        'actual_xy', [NaN NaN], ...
-        'xy_source', "NONE", ...
-        'actual_pose', nan(1, 6), ...
-        'extrusion_delta', 0, ...
-        'status', "", ...
-        'note', "");
+function logData = trim_log(logData, moveIndex)
+    fields = {'timestamp','ref_log','r_log','e_log','e_cmd','material_delta','power_log','xy_status','z_status'};
+    for i = 1:numel(fields)
+        fieldName = fields{i};
+        value = logData.(fieldName);
+        logData.(fieldName) = value(1:moveIndex,:);
+    end
+end
+
+function report = build_report(traj, logData, totalXYDistance, totalZDistance, totalMaterial, elapsedTime, aborted, finalPose)
+    report = struct();
+    report.source_file = traj.sourceFile;
+    report.command_count = numel(traj.sequence);
+    report.waypoint_count = size(traj.waypoints, 1);
+    report.total_time_elapsed = elapsedTime;
+    report.distance_traveled_xy = totalXYDistance;
+    report.distance_traveled_z = totalZDistance;
+    report.material_used = totalMaterial;
+    report.aborted = aborted;
+    report.telemetry = logData;
+
+    if isempty(logData.e_log)
+        report.rmse_x = NaN;
+        report.rmse_y = NaN;
+        report.rmse_z = NaN;
+        report.rmse_3d = NaN;
+        report.rmse_xyz = [NaN, NaN, NaN];
+        report.final_pose_actual = [NaN, NaN, NaN];
+        report.final_pose_expected = [NaN, NaN, NaN];
+        report.final_pose_error = [NaN, NaN, NaN];
+        report.final_pose = finalPose;
+        return;
+    end
+
+    report.rmse_x = sqrt(mean(logData.e_log(:,1).^2, 'omitnan'));
+    report.rmse_y = sqrt(mean(logData.e_log(:,2).^2, 'omitnan'));
+    report.rmse_z = sqrt(mean(logData.e_log(:,3).^2, 'omitnan'));
+    report.rmse_3d = sqrt(mean(sum(logData.e_log.^2, 2), 'omitnan'));
+    report.rmse_xyz = [report.rmse_x, report.rmse_y, report.rmse_z];
+    report.final_pose_actual = logData.r_log(end,:);
+    report.final_pose_expected = logData.ref_log(end,:);
+    report.final_pose_error = logData.e_log(end,:);
+    if isempty(finalPose) || all(isnan(finalPose))
+        report.final_pose = [report.final_pose_actual, NaN, NaN, NaN];
+    else
+        report.final_pose = finalPose;
+    end
+end
+
+function plot_telemetry(logData, report)
+    valid = all(~isnan(logData.r_log), 2) & all(~isnan(logData.ref_log), 2);
+    if ~any(valid)
+        return;
+    end
+
+    t = logData.timestamp(valid);
+    ref = logData.ref_log(valid,:);
+    act = logData.r_log(valid,:);
+    err = logData.e_log(valid,:);
+
+    figure('Name', 'G-code trajectory 3D', 'Color', 'w');
+    plot3(ref(:,1), ref(:,2), ref(:,3), '.-', 'LineWidth', 1.1); hold on;
+    plot3(act(:,1), act(:,2), act(:,3), '.-', 'LineWidth', 1.1);
+    grid on; axis equal;
+    xlabel('X [mm]'); ylabel('Y [mm]'); zlabel('Z [mm]');
+    title(sprintf('Desired vs actual trajectory (RMSE_{3D}=%.2f mm)', report.rmse_3d));
+    legend('Desired', 'Actual', 'Location', 'best');
+
+    figure('Name', 'G-code axis errors', 'Color', 'w');
+    plot(t, err(:,1), 'LineWidth', 1.1); hold on;
+    plot(t, err(:,2), 'LineWidth', 1.1);
+    plot(t, err(:,3), 'LineWidth', 1.1);
+    grid on;
+    xlabel('Time [s]'); ylabel('Error [mm]');
+    legend('e_x', 'e_y', 'e_z', 'Location', 'best');
+    title('Axis tracking errors');
+end
+
+function config = apply_defaults(config)
+    defaults = struct(...
+        'dryRun', false, ...
+        'homeOnStart', false, ...
+        'homeMyCobotOnG28', true, ...
+        'defaultXYFeedrate', 3000, ...
+        'enableKeyboardControl', true, ...
+        'plotTelemetry', true, ...
+        'forwardMCodesToXY', false, ...
+        'forwardOtherCommandsToXY', false, ...
+        'xyTolerance', 1.0, ...
+        'xyPollPeriod', 0.05, ...
+        'xyTimeout', 20.0, ...
+        'xyStallTolerance', 0.05, ...
+        'xyStallSamples', 20, ...
+        'Xmin', -280, ...
+        'Xmax', 280, ...
+        'Ymin', -280, ...
+        'Ymax', 280, ...
+        'Rsafe', 260, ...
+        'robotZMin', 80, ...
+        'robotZMax', 320, ...
+        'myCobotSpeed', 50, ...
+        'myCobotTimeout', 20.0, ...
+        'myCobotHomePosition', [0, -80, 120, 60, 30, 0], ...
+        'robotPoseReference', [0, 0, 120, 0, 0, 0], ...
+        'xyScale', [1, 1], ...
+        'xyOffset', [0, 0], ...
+        'zScale', 1, ...
+        'zOffset', 0, ...
+        'transformFcn', []);
+
+    defaultFields = fieldnames(defaults);
+    for i = 1:numel(defaultFields)
+        fieldName = defaultFields{i};
+        if ~isfield(config, fieldName) || isempty(config.(fieldName))
+            config.(fieldName) = defaults.(fieldName);
+        end
+    end
 end

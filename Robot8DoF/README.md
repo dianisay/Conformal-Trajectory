@@ -24,8 +24,26 @@ This folder contains the complete software to control a **robotic bioprinting sy
 | **`print_trajectory.gcode`** | Example pre-computed trajectory input |
 | **`cameraParams.mat`** | Camera calibration data (do not modify) |
 | **`trainedNet.mat`** | AI model for coordinate transformation (do not modify) |
+| **`gcode_parser.m`** | Parse a G-code file into waypoints + command metadata |
+| **`gcode_executor.m`** | Execute parsed G-code on the XY stage + MyCobot Z axis |
+| **`junto2_gcode.m` / `exec_gcode.m`** | G-code-first workflow entry points |
 
 ---
+
+## 🧾 G-code Workflow
+
+If you already have a pre-computed conformal toolpath, you can now run it directly:
+
+```matlab
+cd Robot8DoF
+[traj, meta] = gcode_parser('C:/absolute/path/conformal_print.gcode');
+[logData, report] = gcode_executor(traj, s, mc, struct('plotTelemetry', true));
+
+% or use the one-shot entry point
+[logData, report, traj] = exec_gcode('C:/absolute/path/conformal_print.gcode');
+```
+
+`gcode_parser.m` supports `G0/G1`, `G28`, `G90/G91`, `G92`, feedrate inheritance, inline comments, and common M-codes while preserving absolute waypoint output for execution.
 
 ## 🚀 Quick Start (5 Minutes)
 

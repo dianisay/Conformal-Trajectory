@@ -1,250 +1,396 @@
-function program = gcode_parser(filePath)
-%GCODE_PARSER Parse a standard G-code file into structured trajectory data.
-%   PROGRAM = GCODE_PARSER(FILEPATH) parses common G-code commands and
-%   returns a struct with per-line command metadata and resolved waypoints
-%   in [X Y Z E F] format.
+function [traj, meta] = gcode_parser(filePath)
+%GCODE_PARSER Parse a G-code file into absolute waypoints and command data.
+%   [TRAJ, META] = GCODE_PARSER(FILEPATH) parses motion commands (G0/G1),
+%   state commands (G28/G90/G91/G92/M82/M83), M-codes, and slicer-style
+%   metadata comments. Waypoints are returned as an N-by-5 matrix:
+%   [X Y Z E Feedrate].
+%
+%   Additional fields:
+%     traj.sequence       - ordered cell array of move/command structs
+%     traj.commands       - non-move command structs
+%     traj.command_count  - total parsed command count
+%     traj.waypoint_count - total motion waypoint count
+%     traj.meta           - metadata extracted from comments
 
-    if ~(ischar(filePath) || (isstring(filePath) && isscalar(filePath)))
-        error('gcode_parser:InvalidInput', 'FILEPATH must be a character vector or scalar string.');
+    if nargin < 1 || isempty(filePath)
+        error('gcode_parser:MissingPath', 'A G-code file path is required.');
     end
+    if ~(ischar(filePath) || isstring(filePath))
+        error('gcode_parser:InvalidPath', 'The G-code file path must be text.');
+    end
+
     filePath = char(filePath);
-    if exist(filePath, 'file') ~= 2
+    if ~isfile(filePath)
         error('gcode_parser:FileNotFound', 'G-code file not found: %s', filePath);
     end
 
-    fid = fopen(filePath, 'r');
-    if fid < 0
-        error('gcode_parser:OpenFailed', 'Unable to open G-code file: %s', filePath);
-    end
-    cleanupObj = onCleanup(@() fclose(fid)); %#ok<NASGU>
+    rawText = fileread(filePath);
+    rawText = strrep(rawText, sprintf('\r\n'), sprintf('\n'));
+    rawText = strrep(rawText, sprintf('\r'), sprintf('\n'));
+    rawLines = regexp(rawText, '\n', 'split');
 
-    state.absoluteMotion = true;
-    state.absoluteExtrusion = true;
-    state.position = [0 0 0 0];   % [X Y Z E]
-    state.feedrate = NaN;
+    logicalLines = collect_logical_lines(rawLines);
 
-    commands = repmat(emptyCommand(), 0, 1);
-    waypoints = zeros(0, 5);
+    state = struct(...
+        'X', 0, 'Y', 0, 'Z', 0, 'E', 0, 'F', NaN, ...
+        'motionAbsolute', true, ...
+        'extrusionAbsolute', true, ...
+        'extrusionModeExplicit', false, ...
+        'unitScale', 1.0, ...
+        'units', 'mm');
 
-    lineNumber = 0;
-    while true
-        rawLine = fgetl(fid);
-        if ~ischar(rawLine)
-            break;
+    waypoints = zeros(0,5);
+    commands = cell(0,1);
+    sequence = cell(0,1);
+    meta = struct();
+    meta.sourceFile = filePath;
+    meta.comments = {};
+    meta.units = 'mm';
+
+    for i = 1:numel(logicalLines)
+        entry = logicalLines{i};
+
+        if ~isempty(entry.comment)
+            meta.comments{end+1,1} = entry.comment; %#ok<AGROW>
+            meta = update_meta_from_comment(meta, entry.comment);
         end
-        lineNumber = lineNumber + 1;
 
-        [cleanLine, commentText] = stripComments(rawLine);
-        if strlength(string(strtrim(cleanLine))) == 0
+        if isempty(entry.code)
             continue;
         end
 
-        words = regexp(upper(strtrim(cleanLine)), '[A-Z][-+]?\d*\.?\d*(?:[Ee][-+]?\d+)?', 'match');
-        if isempty(words)
-            continue;
-        end
-
-        cmd = emptyCommand();
-        cmd.line_number = lineNumber;
-        cmd.raw = string(rawLine);
-        cmd.text = string(strtrim(cleanLine));
-        cmd.comment = string(commentText);
-        cmd.has_x = false; cmd.has_y = false; cmd.has_z = false;
-        cmd.has_e = false; cmd.has_f = false; cmd.has_s = false;
-        cmd.position = state.position;
-        cmd.feedrate = state.feedrate;
-        cmd.set_position = nan(1,4);
-
-        for idx = 1:numel(words)
-            word = words{idx};
-            letter = word(1);
-            valueText = strtrim(word(2:end));
-            if isempty(valueText)
-                value = NaN;
-            else
-                value = str2double(valueText);
+        segments = split_command_segments(entry.code);
+        for j = 1:numel(segments)
+            segment = strtrim(segments{j});
+            if isempty(segment)
+                continue;
             end
 
-            switch letter
-                case {'G','M','T'}
-                    if strlength(cmd.code) == 0 && ~isnan(value)
-                        cmd.code = sprintf('%c%d', letter, round(value));
+            [cmd, params] = parse_command_segment(segment);
+            if isempty(cmd)
+                continue;
+            end
+
+            cmd = upper(cmd);
+            record = struct(...
+                'type', 'command', ...
+                'code', cmd, ...
+                'params', params, ...
+                'lineNumber', entry.lineNumber, ...
+                'line_number', entry.lineNumber, ...
+                'raw', segment, ...
+                'text', segment, ...
+                'comment', entry.comment);
+
+            switch cmd
+                case {'G0', 'G00', 'G1', 'G01'}
+                    [state, target] = apply_motion(state, params);
+                    record.type = 'move';
+                    record.target = target;
+                    record.position = target(1:4);
+                    record.feedrate = target(5);
+                    waypoints(end+1,:) = target; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
+                case 'G20'
+                    state.unitScale = 25.4;
+                    state.units = 'inch';
+                    meta.units = 'inch';
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
+                case 'G21'
+                    state.unitScale = 1.0;
+                    state.units = 'mm';
+                    meta.units = 'mm';
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
+                case 'G90'
+                    state.motionAbsolute = true;
+                    if ~state.extrusionModeExplicit
+                        state.extrusionAbsolute = true;
                     end
-                case 'X'
-                    cmd.has_x = true; cmd.set_position(1) = value;
-                case 'Y'
-                    cmd.has_y = true; cmd.set_position(2) = value;
-                case 'Z'
-                    cmd.has_z = true; cmd.set_position(3) = value;
-                case 'E'
-                    cmd.has_e = true; cmd.set_position(4) = value;
-                case 'F'
-                    cmd.has_f = true; cmd.feedrate = value;
-                case 'S'
-                    cmd.has_s = true; cmd.temperature = value;
-                case 'R'
-                    cmd.extra_r = value;
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
+                case 'G91'
+                    state.motionAbsolute = false;
+                    if ~state.extrusionModeExplicit
+                        state.extrusionAbsolute = false;
+                    end
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
+                case 'M82'
+                    state.extrusionAbsolute = true;
+                    state.extrusionModeExplicit = true;
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
+                case 'M83'
+                    state.extrusionAbsolute = false;
+                    state.extrusionModeExplicit = true;
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
+                case 'G92'
+                    state = apply_set_position(state, params);
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
+                case 'G28'
+                    state = apply_home(state, params);
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
+
                 otherwise
-                    cmd.params.(letter) = value;
+                    commands{end+1,1} = record; %#ok<AGROW>
+                    sequence{end+1,1} = record; %#ok<AGROW>
             end
         end
+    end
 
-        if strlength(cmd.code) == 0
-            cmd.code = string(words{1});
+    traj = struct();
+    traj.sourceFile = filePath;
+    traj.source_file = filePath;
+    traj.waypoints = waypoints;
+    traj.commands = commands;
+    traj.meta = meta;
+    traj.sequence = sequence;
+    traj.command_count = numel(sequence);
+    traj.waypoint_count = size(waypoints, 1);
+    traj.final_state = state;
+    traj.positioningMode = ternary(state.motionAbsolute, 'absolute', 'relative');
+    traj.extrusionMode = ternary(state.extrusionAbsolute, 'absolute', 'relative');
+end
+
+function logicalLines = collect_logical_lines(rawLines)
+    logicalLines = cell(0,1);
+    pendingCode = '';
+    pendingComment = '';
+    pendingLine = 0;
+
+    for i = 1:numel(rawLines)
+        line = strtrim(rawLines{i});
+        if isempty(line)
+            flush_pending();
+            continue;
         end
 
-        code = char(cmd.code);
-        switch code
-            case 'G90'
-                state.absoluteMotion = true;
-                cmd.type = "motion_mode";
-            case 'G91'
-                state.absoluteMotion = false;
-                cmd.type = "motion_mode";
-            case 'M82'
-                state.absoluteExtrusion = true;
-                cmd.type = "extrusion_mode";
-            case 'M83'
-                state.absoluteExtrusion = false;
-                cmd.type = "extrusion_mode";
-            case {'G0','G1'}
-                cmd.type = "motion";
-                [state, cmd] = resolveMotion(state, cmd);
-                waypoints(end+1, :) = [cmd.position, cmd.feedrate]; %#ok<AGROW>
-            case 'G28'
-                cmd.type = "home";
-                cmd.home_axes = homeAxes(cmd);
-                if strlength(cmd.home_axes) == 0
-                    state.position(1:3) = 0;
-                else
-                    if contains(cmd.home_axes, 'X'), state.position(1) = 0; end
-                    if contains(cmd.home_axes, 'Y'), state.position(2) = 0; end
-                    if contains(cmd.home_axes, 'Z'), state.position(3) = 0; end
-                end
-                cmd.position = state.position;
-                cmd.feedrate = state.feedrate;
-            case 'G92'
-                cmd.type = "set_position";
-                axesMask = [cmd.has_x, cmd.has_y, cmd.has_z, cmd.has_e];
-                vals = cmd.set_position;
-                state.position(axesMask) = vals(axesMask);
-                cmd.position = state.position;
-            case 'M104'
-                cmd.type = "set_temperature";
-            case 'M109'
-                cmd.type = "wait_temperature";
-                cmd.wait_for_temperature = true;
-            case {'M0','M1'}
-                cmd.type = "pause";
-            otherwise
-                cmd.type = "raw";
+        [code, comment] = split_inline_comment(line);
+        code = strtrim(code);
+        comment = strtrim(comment);
+
+        if isempty(code)
+            flush_pending();
+            logicalLines{end+1,1} = struct('code', '', 'comment', comment, 'lineNumber', i); %#ok<AGROW>
+            continue;
+        end
+
+        if is_continuation_line(code) && ~isempty(pendingCode)
+            pendingCode = strtrim([pendingCode, ' ', code]);
+            if ~isempty(comment)
+                pendingComment = strtrim(join_comments(pendingComment, comment));
             end
-
-        cmd.motion_absolute = state.absoluteMotion;
-        cmd.extrusion_absolute = state.absoluteExtrusion;
-        commands(end+1, 1) = cmd; %#ok<AGROW>
-    end
-
-    program = struct();
-    program.source_file = string(filePath);
-    program.command_count = numel(commands);
-    program.waypoint_count = size(waypoints, 1);
-    program.waypoints = waypoints;
-    program.commands = commands;
-    program.final_state = state;
-end
-
-function cmd = emptyCommand()
-    cmd = struct( ...
-        'line_number', 0, ...
-        'raw', "", ...
-        'text', "", ...
-        'comment', "", ...
-        'code', "", ...
-        'type', "", ...
-        'params', struct(), ...
-        'position', nan(1,4), ...
-        'feedrate', NaN, ...
-        'temperature', NaN, ...
-        'wait_for_temperature', false, ...
-        'set_position', nan(1,4), ...
-        'home_axes', "", ...
-        'motion_absolute', true, ...
-        'extrusion_absolute', true, ...
-        'extrusion_delta', 0, ...
-        'has_x', false, ...
-        'has_y', false, ...
-        'has_z', false, ...
-        'has_e', false, ...
-        'has_f', false, ...
-        'has_s', false, ...
-        'extra_r', NaN);
-end
-
-function [state, cmd] = resolveMotion(state, cmd)
-    target = state.position;
-    axisMask = [cmd.has_x, cmd.has_y, cmd.has_z];
-    newVals = cmd.set_position(1:3);
-    if any(axisMask)
-        if state.absoluteMotion
-            target(axisMask) = newVals(axisMask);
         else
-            target(axisMask) = target(axisMask) + newVals(axisMask);
+            flush_pending();
+            pendingCode = code;
+            pendingComment = comment;
+            pendingLine = i;
         end
     end
 
-    if cmd.has_e
-        eVal = cmd.set_position(4);
-        if state.absoluteExtrusion
-            target(4) = eVal;
-            cmd.extrusion_delta = eVal - state.position(4);
+    flush_pending();
+
+    function flush_pending()
+        if ~isempty(pendingCode) || ~isempty(pendingComment)
+            logicalLines{end+1,1} = struct( ...
+                'code', strtrim(pendingCode), ...
+                'comment', strtrim(pendingComment), ...
+                'lineNumber', pendingLine); %#ok<AGROW>
+        end
+        pendingCode = '';
+        pendingComment = '';
+        pendingLine = 0;
+    end
+end
+
+function [code, comment] = split_inline_comment(line)
+    idx = find(line == ';', 1, 'first');
+    if isempty(idx)
+        code = line;
+        comment = '';
+    else
+        code = line(1:idx-1);
+        comment = line(idx+1:end);
+    end
+end
+
+function tf = is_continuation_line(code)
+    tf = isempty(regexp(code, '^\s*[GMTgmt]\s*[-+]?\d+', 'once'));
+end
+
+function out = join_comments(a, b)
+    if isempty(a)
+        out = b;
+    elseif isempty(b)
+        out = a;
+    else
+        out = [a, ' | ', b];
+    end
+end
+
+function segments = split_command_segments(code)
+    starts = regexp(code, '[GMTgmt]\s*[-+]?\d+', 'start');
+    if isempty(starts)
+        segments = {code};
+        return;
+    end
+
+    segments = cell(numel(starts), 1);
+    for k = 1:numel(starts)
+        stopIdx = length(code);
+        if k < numel(starts)
+            stopIdx = starts(k+1) - 1;
+        end
+        segments{k} = strtrim(code(starts(k):stopIdx));
+    end
+end
+
+function [cmd, params] = parse_command_segment(segment)
+    token = regexp(segment, '^\s*([GMTgmt])\s*([-+]?\d+)', 'tokens', 'once');
+    if isempty(token)
+        cmd = '';
+        params = struct();
+        return;
+    end
+
+    cmd = [upper(token{1}), token{2}];
+    remainder = segment(regexp(segment, '^\s*[GMTgmt]\s*[-+]?\d+', 'end', 'once') + 1:end);
+    pairs = regexp(remainder, '([A-Za-z])\s*([-+]?(?:\d+(?:\.\d*)?|\.\d+))?', 'tokens');
+
+    params = struct();
+    for i = 1:numel(pairs)
+        key = upper(pairs{i}{1});
+        value = [];
+        if numel(pairs{i}) >= 2 && ~isempty(pairs{i}{2})
+            value = str2double(pairs{i}{2});
+            if isnan(value)
+                value = [];
+            end
+        end
+        params.(key) = value;
+    end
+end
+
+function [state, target] = apply_motion(state, params)
+    axesNames = {'X','Y','Z'};
+    for i = 1:numel(axesNames)
+        axisName = axesNames{i};
+        if isfield(params, axisName) && ~isempty(params.(axisName))
+            value = state.unitScale * params.(axisName);
+            if state.motionAbsolute
+                state.(axisName) = value;
+            else
+                state.(axisName) = state.(axisName) + value;
+            end
+        end
+    end
+
+    if isfield(params, 'E') && ~isempty(params.E)
+        value = state.unitScale * params.E;
+        if state.extrusionAbsolute
+            state.E = value;
         else
-            target(4) = target(4) + eVal;
-            cmd.extrusion_delta = eVal;
+            state.E = state.E + value;
         end
-    else
-        cmd.extrusion_delta = 0;
     end
 
-    if cmd.has_f
-        state.feedrate = cmd.feedrate;
-    else
-        cmd.feedrate = state.feedrate;
+    if isfield(params, 'F') && ~isempty(params.F)
+        state.F = state.unitScale * params.F;
     end
 
-    state.position = target;
-    cmd.position = target;
+    target = [state.X, state.Y, state.Z, state.E, state.F];
 end
 
-function axesText = homeAxes(cmd)
-    names = '';
-    if cmd.has_x, names = [names 'X']; end %#ok<AGROW>
-    if cmd.has_y, names = [names 'Y']; end %#ok<AGROW>
-    if cmd.has_z, names = [names 'Z']; end %#ok<AGROW>
-    axesText = string(names);
+function state = apply_set_position(state, params)
+    fields = fieldnames(params);
+    for i = 1:numel(fields)
+        axisName = upper(fields{i});
+        if isempty(params.(fields{i}))
+            continue;
+        end
+        if ismember(axisName, {'X','Y','Z','E'})
+            state.(axisName) = state.unitScale * params.(axisName);
+        elseif strcmp(axisName, 'F')
+            state.F = state.unitScale * params.(axisName);
+        end
+    end
 end
 
-function [cleanLine, commentText] = stripComments(rawLine)
-    commentParts = strings(0,1);
+function state = apply_home(state, params)
+    homeAxes = {'X','Y','Z'};
+    specifiedAxes = intersect(homeAxes, fieldnames(params));
+    if isempty(specifiedAxes)
+        specifiedAxes = homeAxes;
+    end
 
-    parenTokens = regexp(rawLine, '\(([^\)]*)\)', 'tokens');
-    if ~isempty(parenTokens)
-        for i = 1:numel(parenTokens)
-            commentParts(end+1,1) = string(parenTokens{i}{1}); %#ok<AGROW>
+    for i = 1:numel(specifiedAxes)
+        state.(specifiedAxes{i}) = 0;
+    end
+end
+
+function meta = update_meta_from_comment(meta, comment)
+    token = regexp(comment, '^\s*([^:=]+?)\s*[:=]\s*(.+?)\s*$', 'tokens', 'once');
+    if isempty(token)
+        return;
+    end
+
+    fieldName = make_valid_field_name(strtrim(lower(token{1})));
+    rawValue = strtrim(token{2});
+    value = parse_comment_value(rawValue);
+    meta.(fieldName) = value;
+end
+
+function value = parse_comment_value(rawValue)
+    value = str2double(rawValue);
+    if ~isnan(value)
+        return;
+    end
+
+    numberToken = regexp(rawValue, '[-+]?(?:\d+(?:\.\d*)?|\.\d+)', 'match', 'once');
+    if ~isempty(numberToken)
+        numberValue = str2double(numberToken);
+        if ~isnan(numberValue)
+            value = numberValue;
+            return;
         end
     end
-    noParen = regexprep(rawLine, '\([^\)]*\)', ' ');
 
-    semicolonIdx = strfind(noParen, ';');
-    if isempty(semicolonIdx)
-        cleanLine = noParen;
+    value = rawValue;
+end
+
+function fieldName = make_valid_field_name(rawName)
+    try
+        fieldName = matlab.lang.makeValidName(rawName);
+    catch
+        fieldName = lower(strtrim(rawName));
+        fieldName = regexprep(fieldName, '[^a-zA-Z0-9_]', '_');
+        fieldName = regexprep(fieldName, '_+', '_');
+        if isempty(fieldName)
+            fieldName = 'comment_value';
+        end
+        if ~isempty(regexp(fieldName(1), '[0-9]', 'once'))
+            fieldName = ['x_', fieldName];
+        end
+    end
+end
+
+function out = ternary(condition, trueValue, falseValue)
+    if condition
+        out = trueValue;
     else
-        cleanLine = noParen(1:semicolonIdx(1)-1);
-        semicolonComment = strtrim(noParen(semicolonIdx(1)+1:end));
-        if ~isempty(semicolonComment)
-            commentParts(end+1,1) = string(semicolonComment); %#ok<AGROW>
-        end
+        out = falseValue;
     end
-
-    commentText = strjoin(commentParts, ' | ');
 end
