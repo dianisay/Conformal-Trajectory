@@ -6,12 +6,11 @@ function [traj, meta] = gcode_parser(filePath)
 %   [X Y Z E Feedrate].
 %
 %   Additional fields:
-%     traj.sequence  - ordered cell array of move/command structs
-%     traj.commands  - non-move command structs
-%     traj.meta      - metadata extracted from comments
-%
-%   The parser normalizes motion commands into absolute coordinates while
-%   preserving feedrate inheritance and current-position semantics.
+%     traj.sequence       - ordered cell array of move/command structs
+%     traj.commands       - non-move command structs
+%     traj.command_count  - total parsed command count
+%     traj.waypoint_count - total motion waypoint count
+%     traj.meta           - metadata extracted from comments
 
     if nargin < 1 || isempty(filePath)
         error('gcode_parser:MissingPath', 'A G-code file path is required.');
@@ -78,7 +77,9 @@ function [traj, meta] = gcode_parser(filePath)
                 'code', cmd, ...
                 'params', params, ...
                 'lineNumber', entry.lineNumber, ...
+                'line_number', entry.lineNumber, ...
                 'raw', segment, ...
+                'text', segment, ...
                 'comment', entry.comment);
 
             switch cmd
@@ -86,6 +87,8 @@ function [traj, meta] = gcode_parser(filePath)
                     [state, target] = apply_motion(state, params);
                     record.type = 'move';
                     record.target = target;
+                    record.position = target(1:4);
+                    record.feedrate = target(5);
                     waypoints(end+1,:) = target; %#ok<AGROW>
                     sequence{end+1,1} = record; %#ok<AGROW>
 
@@ -150,10 +153,14 @@ function [traj, meta] = gcode_parser(filePath)
 
     traj = struct();
     traj.sourceFile = filePath;
+    traj.source_file = filePath;
     traj.waypoints = waypoints;
     traj.commands = commands;
     traj.meta = meta;
     traj.sequence = sequence;
+    traj.command_count = numel(sequence);
+    traj.waypoint_count = size(waypoints, 1);
+    traj.final_state = state;
     traj.positioningMode = ternary(state.motionAbsolute, 'absolute', 'relative');
     traj.extrusionMode = ternary(state.extrusionAbsolute, 'absolute', 'relative');
 end

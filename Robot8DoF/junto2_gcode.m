@@ -6,7 +6,12 @@ function [logData, report, traj] = junto2_gcode(gcodeFile, config)
 %   GCODE_EXECUTOR.
 
     if nargin < 1 || isempty(gcodeFile)
-        gcodeFile = input('Enter the absolute path to the G-code file: ', 's');
+        defaultFile = fullfile(fileparts(mfilename('fullpath')), 'print_trajectory.gcode');
+        if isfile(defaultFile)
+            gcodeFile = defaultFile;
+        else
+            gcodeFile = input('Enter the absolute path to the G-code file: ', 's');
+        end
     end
     if nargin < 2 || isempty(config)
         config = struct();
@@ -19,6 +24,13 @@ function [logData, report, traj] = junto2_gcode(gcodeFile, config)
     traj = gcode_parser(gcodeFile);
     preview_trajectory(traj, config);
 
+    if isfield(config, 'mode') && strcmpi(char(config.mode), 'vision')
+        run(fullfile(baseDir, 'junto2.m'));
+        logData = [];
+        report = struct();
+        return;
+    end
+
     s = [];
     mc = [];
 
@@ -26,6 +38,7 @@ function [logData, report, traj] = junto2_gcode(gcodeFile, config)
         s = initialize_xy_serial(config);
         mc = initialize_mycobot(baseDir, config);
     end
+
     [logData, report] = gcode_executor(traj, s, mc, config);
     print_completion_report(gcodeFile, report);
 end
@@ -33,6 +46,7 @@ end
 function config = apply_entry_defaults(config)
     defaults = struct(...
         'dryRun', false, ...
+        'mode', 'gcode', ...
         'xyPort', 'COM5', ...
         'xyBaud', 115200, ...
         'pythonExecutable', '', ...
@@ -46,6 +60,7 @@ function config = apply_entry_defaults(config)
         'plotTelemetry', true, ...
         'enableKeyboardControl', true, ...
         'previewTrajectory', true, ...
+        'loadCalibration', true, ...
         'xyScale', [1, 1], ...
         'xyOffset', [0, 0], ...
         'zScale', 1, ...
@@ -62,14 +77,26 @@ function config = apply_entry_defaults(config)
 end
 
 function config = load_calibration_assets(baseDir, config)
+    if ~config.loadCalibration
+        return;
+    end
+
     cameraFile = fullfile(baseDir, 'cameraParams.mat');
     if isfile(cameraFile)
-        config.cameraCalibration = load(cameraFile);
+        try
+            config.cameraCalibration = load(cameraFile);
+        catch ME
+            warning('junto2_gcode:CameraCalibration', 'Could not load camera calibration: %s', ME.message);
+        end
     end
 
     netFile = fullfile(baseDir, 'trainedNet.mat');
     if isfile(netFile)
-        config.trainedNet = load(netFile);
+        try
+            config.trainedNet = load(netFile);
+        catch ME
+            warning('junto2_gcode:TrainedNet', 'Could not load trainedNet.mat: %s', ME.message);
+        end
     end
 end
 
@@ -78,6 +105,8 @@ function s = initialize_xy_serial(config)
     configureTerminator(s, 'LF');
     flush(s);
     disp('XY serial connection opened.');
+    writeline(s, 'G90');
+    pause(0.05);
 end
 
 function mc = initialize_mycobot(baseDir, config)

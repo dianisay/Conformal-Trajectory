@@ -9,6 +9,10 @@ function [logData, report] = gcode_executor(traj, s, mc, config)
     if nargin < 3, mc = []; end
     if nargin < 4 || isempty(config), config = struct(); end
 
+    if ischar(traj) || isstring(traj)
+        traj = gcode_parser(traj);
+    end
+
     config = apply_defaults(config);
     [logData, report] = exec_gcode_trajectory(traj, s, mc, config);
 end
@@ -28,14 +32,14 @@ function [logData, report] = exec_gcode_trajectory(traj, s, mc, config)
         'lastZ', 0, ...
         'lastE', 0, ...
         'lastFeed', config.defaultXYFeedrate, ...
-        'aborted', false, ...
-        'pauseEnabled', controller.enabled);
+        'aborted', false);
 
     moveIndex = 0;
     totalXYDistance = 0;
     totalZDistance = 0;
     totalMaterial = 0;
     t0 = tic;
+    finalPose = [NaN, NaN, NaN, NaN, NaN, NaN];
 
     if config.homeOnStart
         homeEntry = struct('code', 'G28', 'params', struct(), 'raw', 'G28');
@@ -65,7 +69,7 @@ function [logData, report] = exec_gcode_trajectory(traj, s, mc, config)
             target(3) = min(max(target(3), config.robotZMin), config.robotZMax);
 
             [xyActual, xyStatus] = move_xy_gcode(target, s, config, state.lastXY);
-            [zActual, zStatus] = move_robot_z(target(3), mc, config);
+            [zActual, zStatus, poseAfter] = move_robot_z(target(3), mc, config);
             [materialDelta, materialTotal] = extrude_material(target(4), state.lastE, totalMaterial);
 
             desired = target(1:3);
@@ -77,6 +81,11 @@ function [logData, report] = exec_gcode_trajectory(traj, s, mc, config)
             state.lastZ = zActual;
             state.lastE = target(4);
             totalMaterial = materialTotal;
+            if ~isempty(poseAfter)
+                finalPose = poseAfter;
+            else
+                finalPose(1:3) = [xyActual, zActual];
+            end
 
             logData = log_telemetry(logData, moveIndex, toc(t0), desired, actual, target(4), materialDelta, xyStatus, zStatus, entry);
         else
@@ -88,7 +97,7 @@ function [logData, report] = exec_gcode_trajectory(traj, s, mc, config)
     logData = trim_log(logData, moveIndex);
     logData.material_total = totalMaterial;
 
-    report = build_report(logData, totalXYDistance, totalZDistance, totalMaterial, toc(t0), state.aborted);
+    report = build_report(traj, logData, totalXYDistance, totalZDistance, totalMaterial, toc(t0), state.aborted, finalPose);
 
     if config.plotTelemetry && moveIndex > 0
         plot_telemetry(logData, report);
@@ -286,8 +295,9 @@ function targetXY = clamp_xy_target(targetXY, config)
     end
 end
 
-function [actualZ, status] = move_robot_z(targetZ, mc, config)
+function [actualZ, status, poseAfter] = move_robot_z(targetZ, mc, config)
     status = struct('ok', true, 'source', 'DRYRUN', 'pose', []);
+    poseAfter = [];
     if isnan(targetZ)
         actualZ = NaN;
         return;
@@ -296,6 +306,7 @@ function [actualZ, status] = move_robot_z(targetZ, mc, config)
     targetZ = min(max(targetZ, config.robotZMin), config.robotZMax);
     if config.dryRun || isempty(mc)
         actualZ = targetZ;
+        poseAfter = [NaN, NaN, actualZ, NaN, NaN, NaN];
         return;
     end
 
@@ -313,6 +324,7 @@ function [actualZ, status] = move_robot_z(targetZ, mc, config)
         poseAfter = safe_get_pose(mc);
         if isempty(poseAfter)
             actualZ = targetZ;
+            poseAfter = [NaN, NaN, actualZ, NaN, NaN, NaN];
         else
             actualZ = poseAfter(3);
             status.pose = poseAfter;
@@ -320,6 +332,7 @@ function [actualZ, status] = move_robot_z(targetZ, mc, config)
         end
     catch ME
         actualZ = targetZ;
+        poseAfter = [NaN, NaN, actualZ, NaN, NaN, NaN];
         status.ok = false;
         status.source = 'MYCOBOT_ERROR';
         status.error = ME.message;
@@ -331,8 +344,13 @@ function pose = safe_get_pose(mc)
     try
         poseObj = mc.get_pose();
         coords = pylist_to_double(poseObj{'coords'});
-        if ~isempty(coords) && ~all(isnan(coords(1:min(end,3))))
-            pose = coords(:).';
+        if ~isempty(coords)
+            pose = reshape(double(coords), 1, []);
+            if numel(pose) < 6
+                pose(6) = NaN;
+            else
+                pose = pose(1:6);
+            end
         end
     catch
         pose = [];
@@ -405,16 +423,16 @@ function [state, note] = execute_non_move_command(entry, s, mc, config, state)
             end
 
         case 'G92'
-            if isfield(params, 'X')
+            if isfield(params, 'X') && ~isempty(params.X)
                 state.lastXY(1) = params.X;
             end
-            if isfield(params, 'Y')
+            if isfield(params, 'Y') && ~isempty(params.Y)
                 state.lastXY(2) = params.Y;
             end
-            if isfield(params, 'Z')
+            if isfield(params, 'Z') && ~isempty(params.Z)
                 state.lastZ = params.Z;
             end
-            if isfield(params, 'E')
+            if isfield(params, 'E') && ~isempty(params.E)
                 state.lastE = params.E;
             end
             if ~config.dryRun && ~isempty(s)
@@ -467,7 +485,7 @@ function cmd = build_g92_command(params)
     axesNames = {'X','Y'};
     for i = 1:numel(axesNames)
         axisName = axesNames{i};
-        if isfield(params, axisName)
+        if isfield(params, axisName) && ~isempty(params.(axisName))
             tokens{end+1} = sprintf('%s%.3f', axisName, params.(axisName)); %#ok<AGROW>
         end
     end
@@ -501,22 +519,28 @@ function logData = trim_log(logData, moveIndex)
     end
 end
 
-function report = build_report(logData, totalXYDistance, totalZDistance, totalMaterial, elapsedTime, aborted)
+function report = build_report(traj, logData, totalXYDistance, totalZDistance, totalMaterial, elapsedTime, aborted, finalPose)
     report = struct();
+    report.source_file = traj.sourceFile;
+    report.command_count = numel(traj.sequence);
+    report.waypoint_count = size(traj.waypoints, 1);
     report.total_time_elapsed = elapsedTime;
     report.distance_traveled_xy = totalXYDistance;
     report.distance_traveled_z = totalZDistance;
     report.material_used = totalMaterial;
     report.aborted = aborted;
+    report.telemetry = logData;
 
     if isempty(logData.e_log)
         report.rmse_x = NaN;
         report.rmse_y = NaN;
         report.rmse_z = NaN;
         report.rmse_3d = NaN;
+        report.rmse_xyz = [NaN, NaN, NaN];
         report.final_pose_actual = [NaN, NaN, NaN];
         report.final_pose_expected = [NaN, NaN, NaN];
         report.final_pose_error = [NaN, NaN, NaN];
+        report.final_pose = finalPose;
         return;
     end
 
@@ -524,9 +548,15 @@ function report = build_report(logData, totalXYDistance, totalZDistance, totalMa
     report.rmse_y = sqrt(mean(logData.e_log(:,2).^2, 'omitnan'));
     report.rmse_z = sqrt(mean(logData.e_log(:,3).^2, 'omitnan'));
     report.rmse_3d = sqrt(mean(sum(logData.e_log.^2, 2), 'omitnan'));
+    report.rmse_xyz = [report.rmse_x, report.rmse_y, report.rmse_z];
     report.final_pose_actual = logData.r_log(end,:);
     report.final_pose_expected = logData.ref_log(end,:);
     report.final_pose_error = logData.e_log(end,:);
+    if isempty(finalPose) || all(isnan(finalPose))
+        report.final_pose = [report.final_pose_actual, NaN, NaN, NaN];
+    else
+        report.final_pose = finalPose;
+    end
 end
 
 function plot_telemetry(logData, report)
@@ -595,100 +625,6 @@ function config = apply_defaults(config)
         fieldName = defaultFields{i};
         if ~isfield(config, fieldName) || isempty(config.(fieldName))
             config.(fieldName) = defaults.(fieldName);
-        end
-    end
-end
-
-function [XR, YR, ok, src] = getXY(s)
-    XR = NaN; YR = NaN; ok = false; src = 'NONE';
-
-    function txt = readBurst(timeout_s)
-        if nargin < 1, timeout_s = 0.25; end
-        raw = strings(0);
-        t0 = tic;
-        while toc(t0) < timeout_s
-            if s.NumBytesAvailable > 0
-                try
-                    raw(end+1) = readline(s); %#ok<AGROW>
-                catch
-                    break;
-                end
-            else
-                pause(0.01);
-            end
-        end
-        txt = strjoin(raw, ' ');
-    end
-
-    try
-        flush(s);
-        writeline(s, 'M114');
-        pause(0.03);
-        txt = readBurst(0.25);
-        rx = regexp(txt, 'X\s*:\s*(-?\d+\.?\d*)', 'tokens', 'once');
-        ry = regexp(txt, 'Y\s*:\s*(-?\d+\.?\d*)', 'tokens', 'once');
-        if ~isempty(rx) && ~isempty(ry)
-            XR = str2double(rx{1});
-            YR = str2double(ry{1});
-            ok = ~(isnan(XR) || isnan(YR));
-            if ok, src = 'M114'; return; end
-        end
-    catch
-    end
-
-    try
-        flush(s);
-        write(s, '?', 'char');
-        pause(0.05);
-        txt = readBurst(0.25);
-        rW = regexp(txt, 'WPos\s*:\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)', 'tokens', 'once');
-        if ~isempty(rW)
-            XR = str2double(rW{1});
-            YR = str2double(rW{2});
-            ok = ~(isnan(XR) || isnan(YR));
-            if ok, src = 'GRBL:WPos'; return; end
-        end
-        rM = regexp(txt, 'MPos\s*:\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)', 'tokens', 'once');
-        if ~isempty(rM)
-            XR = str2double(rM{1});
-            YR = str2double(rM{2});
-            ok = ~(isnan(XR) || isnan(YR));
-            if ok, src = 'GRBL:MPos'; return; end
-        end
-    catch
-    end
-
-    try
-        flush(s);
-        writeline(s, 'GET_POSITION');
-        pause(0.05);
-        txt = readBurst(0.25);
-        rx = regexp(txt, 'x\s*:\s*(-?\d+\.?\d*)', 'tokens', 'once');
-        ry = regexp(txt, 'y\s*:\s*(-?\d+\.?\d*)', 'tokens', 'once');
-        if ~isempty(rx) && ~isempty(ry)
-            XR = str2double(rx{1});
-            YR = str2double(ry{1});
-            ok = ~(isnan(XR) || isnan(YR));
-            if ok, src = 'KLIPPER'; return; end
-        end
-    catch
-    end
-end
-
-function v = pylist_to_double(pyobj)
-    C = cell(pyobj);
-    if isempty(C)
-        v = [];
-        return;
-    end
-    if all(cellfun(@(x) ~iscell(x), C))
-        v = cellfun(@double, C, 'UniformOutput', true);
-    else
-        n = numel(C);
-        m = numel(cell(C{1}));
-        v = zeros(n,m);
-        for i = 1:n
-            v(i,:) = cellfun(@double, cell(C{i}), 'UniformOutput', true);
         end
     end
 end
