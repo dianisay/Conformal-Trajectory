@@ -16,8 +16,12 @@ This folder contains the complete software to control a **robotic bioprinting sy
 
 | File | Purpose |
 |------|---------|
-| **`junto2.m`** | Main MATLAB program ⭐ START HERE |
+| **`junto2.m`** | Original camera-based MATLAB program ⭐ START HERE |
+| **`junto2_gcode.m`** | New MATLAB entry point for direct G-code execution |
+| **`gcode_parser.m`** | Parses G-code into structured waypoints and commands |
+| **`gcode_executor.m`** | Executes parsed G-code on the XY platform + MyCobot |
 | **`mc_bridge.py`** | Connects MATLAB to the robot arm |
+| **`print_trajectory.gcode`** | Example pre-computed trajectory input |
 | **`cameraParams.mat`** | Camera calibration data (do not modify) |
 | **`trainedNet.mat`** | AI model for coordinate transformation (do not modify) |
 
@@ -57,11 +61,19 @@ pip install pymycobot
 
 ### Step 3: Run the Program
 
+#### Camera-based mode (existing workflow)
 1. Open MATLAB
 2. Navigate to the `robot/` folder
 3. Open `junto2.m`
 4. Press **Run** (or Ctrl+Enter)
 5. **Press 'Q'** on the figure window to stop
+
+#### Direct G-code mode (new workflow)
+1. Place or edit a trajectory file such as `print_trajectory.gcode`
+2. Open `junto2_gcode.m`
+3. Set `mode = "gcode"` and update `gcodeFile`, `port`, and `pyExe`
+4. Press **Run** to parse the full program and execute it autonomously
+5. Create the file `gcode.pause` in the same folder to pause; remove it to resume
 
 ---
 
@@ -297,7 +309,13 @@ To retrain with your own data:
 ```
 robot/
 ├── README.md                 ← You are here
-├── junto2.m                  ← Main MATLAB program
+├── junto2.m                  ← Original camera-based workflow
+├── junto2_gcode.m            ← Direct G-code workflow
+├── gcode_parser.m            ← G-code parser
+├── gcode_executor.m          ← G-code executor
+├── getXY.m                   ← XY feedback helper
+├── pylist_to_double.m        ← Python/MATLAB conversion helper
+├── print_trajectory.gcode    ← Example G-code input
 ├── mc_bridge.py              ← Python-Robot bridge
 ├── cameraParams.mat          ← Camera intrinsics (calibration)
 └── trainedNet.mat            ← Pre-trained AI model
@@ -363,3 +381,28 @@ For issues with:
 **Last Updated:** 2026  
 **System:** MyCobot 280 M5 + XY Cartesian Platform  
 **Language:** MATLAB + Python 3.11
+
+## 🧾 G-code Input Support
+
+The new G-code path is designed for pre-computed trajectories so the robot can run without the camera/vision loop.
+
+### Supported commands
+- `G0`, `G1` — motion waypoints with `X`, `Y`, `Z`, `E`, `F`
+- `G28` — homing
+- `G90`, `G91` — absolute/relative motion
+- `G92` — set origin/work coordinates
+- `M82`, `M83` — absolute/relative extrusion mode
+- `M104`, `M109` — extruder temperature commands (passed through to the XY firmware)
+- `M0`, `M1` — pause commands
+
+### Execution model
+- **XY platform:** receives parsed `G1` absolute cartesian moves over serial
+- **MyCobot 280:** receives the parsed `Z` moves through `mc_bridge.py` while preserving the current arm pose/orientation by default
+- **Extruder:** currently a placeholder callback driven from `E` deltas so future material-control code can be plugged in without changing the parser
+- **Telemetry:** each command logs desired values, measured XY feedback, MyCobot pose, elapsed time, and final RMSE summary
+
+### Example
+```matlab
+program = gcode_parser('print_trajectory.gcode');
+report = gcode_executor(program, s, mc, struct('pause_file', 'gcode.pause'));
+```
